@@ -45,25 +45,25 @@ export function AppHeader() {
   return (
     <View style={{ backgroundColor: '#3a3a3a', borderBottomWidth: 4, borderBottomColor: '#000', paddingTop: insets.top }}>
       <View style={{ width: '100%', maxWidth: 980, alignSelf: 'center', flexDirection: 'row', alignItems: narrow ? 'flex-start' : 'center',
-        justifyContent: 'space-between', flexWrap: narrow ? 'nowrap' : 'wrap', gap: 10, padding: 12 }}>
+        justifyContent: 'space-between', flexWrap: narrow ? 'nowrap' : 'wrap', gap: 10, paddingHorizontal: 12, paddingVertical: 6 }}>
         {/* Su telefono le regole vanno sotto il logo, perché a destra lo spazio è già pieno. */}
-        <View style={{ alignItems: 'flex-start', gap: 8 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+        <View style={{ alignItems: 'flex-start', gap: 6 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             <Image
               source={require('@/assets/images/logo.gif')}
-              style={{ width: 72, height: 72 }}
+              style={{ width: 56, height: 56 }}
               contentFit="contain"
               accessibilityLabel="Logo PanEx"
             />
             <View>
               <Logo />
-              <Text style={{ fontFamily: fonts.body, fontSize: 18, color: '#c8c8c8', marginTop: 4 }}>Panera Exchange</Text>
+              <Text style={{ fontFamily: fonts.body, fontSize: 18, color: '#c8c8c8', marginTop: 2 }}>Panera Exchange</Text>
             </View>
           </View>
           {narrow && <RulesButton />}
         </View>
         {/* Su telefono: saldo ed Esci, poi il nome, poi chi è online, tutto allineato a destra. */}
-        <View style={{ alignItems: 'flex-end', gap: 6, flexShrink: 1 }}>
+        <View style={{ alignItems: 'flex-end', gap: 4, flexShrink: 1 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
             {!narrow && <RulesButton />}
             {!narrow && name}
@@ -111,7 +111,7 @@ export function Nav({ bottom }: { bottom?: boolean }) {
     </View>
   )
   return (
-    <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: 8, paddingVertical: 16 }}>
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: 8, paddingVertical: 10 }}>
       {buttons}
     </View>
   )

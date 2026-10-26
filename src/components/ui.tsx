@@ -95,7 +95,7 @@ export function BalanceChip() {
   const { balance } = useSession()
   return (
     <View style={s.chip}>
-      <TosiIcon size={40} />
+      <TosiIcon size={32} />
       <Text style={{ fontFamily: fonts.body, fontSize: 24, color: '#fff' }}>
         {balance === null ? '...' : fmtBalance(balance)}
       </Text>
@@ -177,7 +177,7 @@ const s = StyleSheet.create({
   btn: { paddingHorizontal: 12, paddingVertical: 4, borderWidth: 3, borderTopColor: 'rgba(255,255,255,0.35)', borderLeftColor: 'rgba(255,255,255,0.35)', borderBottomColor: 'rgba(0,0,0,0.35)', borderRightColor: 'rgba(0,0,0,0.35)' },
   card: { borderWidth: 3, padding: 12, boxShadow: '4px 4px 0px #000' },
   badge: { alignSelf: 'flex-start', borderWidth: 2, paddingHorizontal: 6 },
-  chip: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#262626', borderWidth: 3, borderColor: '#000', paddingHorizontal: 10, paddingVertical: 4 },
+  chip: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#262626', borderWidth: 3, borderColor: '#000', paddingHorizontal: 10, paddingVertical: 2 },
   select: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderWidth: 3, paddingHorizontal: 8, paddingVertical: 4 },
   selectMenu: { position: 'absolute', elevation: 8 },
 })
