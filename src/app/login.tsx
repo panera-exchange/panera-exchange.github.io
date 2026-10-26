@@ -1,12 +1,13 @@
-import { useState } from 'react'
-import { KeyboardAvoidingView, Platform, StyleSheet, TextInput, View } from 'react-native'
-import { Redirect } from 'expo-router'
-import { supabase } from '@/lib/supabase'
-import { useSession } from '@/lib/session'
-import { fonts, useTheme } from '@/theme'
-import { Btn, Card, Txt } from '@/components/ui'
 import { Footer, Logo } from '@/components/shell'
 import { Splash } from '@/components/splash'
+import { Btn, Card, Txt } from '@/components/ui'
+import { useSession } from '@/lib/session'
+import { supabase } from '@/lib/supabase'
+import { fonts, useTheme } from '@/theme'
+import { Image } from 'expo-image'
+import { Redirect } from 'expo-router'
+import { useState } from 'react'
+import { KeyboardAvoidingView, Platform, StyleSheet, TextInput, View } from 'react-native'
 
 export default function Login() {
   const { session } = useSession()
@@ -32,7 +33,15 @@ export default function Login() {
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={s.screen}>
       <View style={{ width: '100%', maxWidth: 380, marginBottom: 32 }}><Splash /></View>
       <Card style={{ width: '100%', maxWidth: 380, gap: 12 }}>
-        <Logo size={20} />
+        <View style={{ alignItems: 'center', gap: 8 }}>
+          <Image
+            source={require('@/assets/images/logo.gif')}
+            style={{ width: 128, height: 128 }}
+            contentFit="contain"
+            accessibilityLabel="Logo PanEx"
+          />
+          <Logo size={20} />
+        </View>
         <Txt variant="muted">Panera Exchange · accesso su invito</Txt>
         <TextInput style={input} placeholder="Email" placeholderTextColor={t.muted} autoCapitalize="none"
           keyboardType="email-address" value={email} onChangeText={setEmail} />
