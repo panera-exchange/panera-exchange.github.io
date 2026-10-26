@@ -39,6 +39,9 @@ export function ConfirmDialog({ title, text, confirmLabel, danger, busy, error, 
 
 type Picked = { id: string; name: string }
 
+// Altezza fissa di una riga dei risultati, così l'elenco mostra sempre lo stesso numero di righe.
+const RESULT_ROW = 40
+
 // Ricerca nel catalogo: interroga il database mentre si scrive (il catalogo ha oltre 1.300 item).
 function ItemPicker({ value, onChange }: { value: Picked | null; onChange: (i: Picked | null) => void }) {
   const t = useTheme()
@@ -72,14 +75,18 @@ function ItemPicker({ value, onChange }: { value: Picked | null; onChange: (i: P
       <TextInput value={text} onChangeText={setText} placeholder="Cerca un item (es. Obsidian)" placeholderTextColor={t.muted}
         autoCapitalize="none" style={[s.input, { borderColor: t.line, backgroundColor: t.panel, color: t.ink }]} />
       {results.length > 0 && (
-        <ScrollView style={{ maxHeight: 240 }} nestedScrollEnabled keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+        // Tre righe e mezza: quella tagliata fa capire che l'elenco continua scorrendo.
+        <ScrollView style={{ maxHeight: RESULT_ROW * 3.5 }} nestedScrollEnabled keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
           {results.map((r) => (
-            <Pressable key={r.id} onPress={() => onChange(r)} style={[s.row, { borderBottomWidth: 2, borderColor: t.soft, paddingVertical: 4 }]}>
+            <Pressable key={r.id} onPress={() => onChange(r)} style={[s.row, { height: RESULT_ROW, flexWrap: 'nowrap', borderBottomWidth: 2, borderColor: t.soft }]}>
               <ItemIcon id={r.id} size={28} />
-              <Txt>{r.name}</Txt>
+              <Txt numberOfLines={1} style={{ flex: 1 }}>{r.name}</Txt>
             </Pressable>
           ))}
         </ScrollView>
+      )}
+      {/diamant|diamond/i.test(needle) && (
+        <Txt variant="muted">Diamanti, blocchi e minerali di diamante non si scambiano su PanEx: passano solo dalla BCP (art. 06).</Txt>
       )}
       {currentSearch?.failed && <Txt variant="error">Ricerca non disponibile. Riprova.</Txt>}
       {currentSearch && !currentSearch.failed && results.length === 0 && <Txt variant="muted">Nessun item trovato.</Txt>}
