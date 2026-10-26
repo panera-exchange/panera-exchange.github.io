@@ -51,7 +51,7 @@ export function AppHeader() {
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             <Image
               source={require('@/assets/images/logo.gif')}
-              style={{ width: 72, height: 72 }}
+              style={{ width: 58, height: 58 }}
               contentFit="contain"
               accessibilityLabel="Logo PanEx"
             />
