@@ -18,7 +18,18 @@ export function Logo({ size = 22 }: { size?: number }) {
   )
 }
 
-// Intestazione: logo, saldo, utente e pulsante Esci.
+// Pulsante delle regole del mercato: color diamante, acceso quando la pagina è aperta.
+function RulesButton() {
+  const path = usePathname()
+  const router = useRouter()
+  const active = path === '/regole'
+  return (
+    <Btn title="Regole" variant="nav" color={active ? '#2fa7ad' : '#1d5e63'} active={active}
+      onPress={() => router.navigate('/regole')} />
+  )
+}
+
+// Intestazione: logo, regole, utente, saldo e pulsante Esci.
 export function AppHeader() {
   const { username } = useSession()
   const insets = useSafeAreaInsets()
@@ -35,21 +46,26 @@ export function AppHeader() {
     <View style={{ backgroundColor: '#3a3a3a', borderBottomWidth: 4, borderBottomColor: '#000', paddingTop: insets.top }}>
       <View style={{ width: '100%', maxWidth: 980, alignSelf: 'center', flexDirection: 'row', alignItems: narrow ? 'flex-start' : 'center',
         justifyContent: 'space-between', flexWrap: narrow ? 'nowrap' : 'wrap', gap: 10, padding: 12 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-          <Image
-            source={require('@/assets/images/logo.gif')}
-            style={{ width: 72, height: 72 }}
-            contentFit="contain"
-            accessibilityLabel="Logo PanEx"
-          />
-          <View>
-            <Logo />
-            <Text style={{ fontFamily: fonts.body, fontSize: 18, color: '#c8c8c8', marginTop: 4 }}>Panera Exchange</Text>
+        {/* Su telefono le regole vanno sotto il logo, perché a destra lo spazio è già pieno. */}
+        <View style={{ alignItems: 'flex-start', gap: 8 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <Image
+              source={require('@/assets/images/logo.gif')}
+              style={{ width: 72, height: 72 }}
+              contentFit="contain"
+              accessibilityLabel="Logo PanEx"
+            />
+            <View>
+              <Logo />
+              <Text style={{ fontFamily: fonts.body, fontSize: 18, color: '#c8c8c8', marginTop: 4 }}>Panera Exchange</Text>
+            </View>
           </View>
+          {narrow && <RulesButton />}
         </View>
         {/* Su telefono: saldo ed Esci, poi il nome, poi chi è online, tutto allineato a destra. */}
         <View style={{ alignItems: 'flex-end', gap: 6, flexShrink: 1 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+            {!narrow && <RulesButton />}
             {!narrow && name}
             {balanceAndExit}
           </View>
