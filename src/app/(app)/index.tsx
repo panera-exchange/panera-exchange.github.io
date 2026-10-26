@@ -61,31 +61,35 @@ export default function Home() {
 
   const cards = stats && [
     { key: 'rate', node: (
-      <Card>
+      <Card style={{ flex: 1 }}>
         <Txt variant="muted">Tasso di cambio BCP</Txt>
         <View style={{ marginTop: 6, flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
           <Txt variant="price" style={{ fontSize: 28, lineHeight: 32 }}>1</Txt>
-          <Image source={require('@/assets/images/diamond.png')}
-            style={{ width: 35, height: 35 }}
-            contentFit="contain" accessibilityLabel="Diamante" />
+          <View style={{ filter: 'drop-shadow(0 0 8px rgba(94, 207, 255, 0.6))' }}>
+            <Image source={require('@/assets/images/diamond.png')}
+              style={{ width: 35, height: 35 }}
+              contentFit="contain" accessibilityLabel="Diamante" />
+          </View>
           <Amount variant="price" style={{ fontSize: 28, lineHeight: 32 }}>= {fmt(stats.rate)}</Amount>
         </View>
       </Card>
     ) },
     { key: 'reserve', node: (
-      <Card>
+      <Card style={{ flex: 1 }}>
         <Txt variant="muted">Riserva totale</Txt>
         <View style={s.row}>
-          <Txt style={{ fontSize: 34, lineHeight: 40 }}>{fmt(stats.reserve)}</Txt>
-          <Image source={require('@/assets/images/diamond.png')} style={s.itemIcon} contentFit="contain" />
+          <Txt style={{ fontSize: 34, lineHeight: 40, color: '#5ecfff', textShadowColor: 'rgba(94, 207, 255, 0.75)', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 12 }}>{fmt(stats.reserve)}</Txt>
+          <View style={{ filter: 'drop-shadow(0 0 8px rgba(94, 207, 255, 0.6))' }}>
+            <Image source={require('@/assets/images/diamond.png')} style={s.itemIcon} contentFit="contain" />
+          </View>
         </View>
         <Txt variant="muted">diamanti</Txt>
       </Card>
     ) },
     { key: 'exchanges', node: (
-      <Card>
+      <Card style={{ flex: 1 }}>
         <Txt variant="muted">Scambi totali</Txt>
-        <Txt style={{ fontSize: 34, lineHeight: 40 }}>{fmt(stats.exchanges)}</Txt>
+        <Txt style={{ fontSize: 34, lineHeight: 40, color: '#ff1a1a', textShadowColor: 'rgba(255, 0, 0, 0.75)', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 12 }}>{fmt(stats.exchanges)}</Txt>
         <Amount variant="muted" after="scambiati">{fmt(stats.volume)}</Amount>
       </Card>
     ) },
