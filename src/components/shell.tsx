@@ -1,12 +1,12 @@
-import { OnlineBadge } from '@/components/online-badge'
-import { BalanceChip, Btn } from '@/components/ui'
-import { useSession } from '@/lib/session'
-import { supabase } from '@/lib/supabase'
-import { fonts } from '@/theme'
+import { Text, View, useWindowDimensions } from 'react-native'
 import { Image } from 'expo-image'
 import { usePathname, useRouter } from 'expo-router'
-import { Text, View, useWindowDimensions } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { supabase } from '@/lib/supabase'
+import { useSession } from '@/lib/session'
+import { fonts } from '@/theme'
+import { BalanceChip, Btn } from '@/components/ui'
+import { OnlineBadge } from '@/components/online-badge'
 
 // Logo PanEx: "Pan" verde, "Ex" giallo, ombra nera piena.
 export function Logo({ size = 22 }: { size?: number }) {

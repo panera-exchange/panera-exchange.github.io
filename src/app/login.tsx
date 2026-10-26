@@ -1,13 +1,13 @@
-import { Footer, Logo } from '@/components/shell'
-import { Splash } from '@/components/splash'
-import { Btn, Card, Txt } from '@/components/ui'
-import { useSession } from '@/lib/session'
-import { supabase } from '@/lib/supabase'
-import { fonts, useTheme } from '@/theme'
-import { Image } from 'expo-image'
-import { Redirect } from 'expo-router'
 import { useState } from 'react'
 import { KeyboardAvoidingView, Platform, StyleSheet, TextInput, View } from 'react-native'
+import { Image } from 'expo-image'
+import { Redirect } from 'expo-router'
+import { supabase } from '@/lib/supabase'
+import { useSession } from '@/lib/session'
+import { fonts, useTheme } from '@/theme'
+import { Btn, Card, Txt } from '@/components/ui'
+import { Footer, Logo } from '@/components/shell'
+import { Splash } from '@/components/splash'
 
 export default function Login() {
   const { session } = useSession()

@@ -65,8 +65,10 @@ export default function Home() {
         <Txt variant="muted">Tasso di cambio BCP</Txt>
         <View style={{ marginTop: 6, flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
           <Txt variant="price" style={{ fontSize: 28, lineHeight: 32 }}>1</Txt>
-          <View style={{ filter: 'drop-shadow(0 0 8px rgba(94, 207, 255, 0.6))',  width: 35, height: 35  }}>
-            <Image source={require('@/assets/images/diamond.png')} style={s.itemIcon} contentFit="contain" />
+          <View style={{ filter: 'drop-shadow(0 0 8px rgba(94, 207, 255, 0.6))' }}>
+            <Image source={require('@/assets/images/diamond.png')}
+              style={{ width: 35, height: 35 }}
+              contentFit="contain" accessibilityLabel="Diamante" />
           </View>
           <Amount variant="price" style={{ fontSize: 28, lineHeight: 32 }}>= {fmt(stats.rate)}</Amount>
         </View>

@@ -1,7 +1,7 @@
-import { fonts } from '@/theme'
 import { useEffect, useState } from 'react'
 import { StyleSheet } from 'react-native'
 import Animated, { Easing, cancelAnimation, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated'
+import { fonts } from '@/theme'
 
 // Frasi buffe del server, scelte da Tinca.
 const LOGIN_QUOTES = [
