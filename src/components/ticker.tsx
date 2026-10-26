@@ -57,7 +57,7 @@ export function Ticker() {
                 {r.items?.name ?? '?'} ×{fmt(r.quantity)}
               </Text>
               <Text style={[s.text, { color }]}>{fmt(r.unit_price)}</Text>
-              <TosiIcon size={24} />
+              <TosiIcon fontSize={20} />
             </View>
           )
         })}

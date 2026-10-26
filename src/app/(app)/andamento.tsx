@@ -1,4 +1,5 @@
 import { Dialog } from '@/components/dialogs'
+import { TopNav, pageContent } from '@/components/shell'
 import { Amount, Badge, Btn, Card, ItemIcon, Select, Txt, fmt } from '@/components/ui'
 import { compareMoney } from '@/lib/format'
 import { supabase } from '@/lib/supabase'
@@ -130,7 +131,7 @@ function StatCard({ row, wide, now, onHelp }: {
       </View>
       <View style={[s.details, wide ? s.detailsWide : s.detailsNarrow]}>
         <View style={[s.mainPrice, wide && s.mainPriceWide]}>
-          <Amount variant="price" style={s.price} iconSize={50}>{fmt(row.last_price)}</Amount>
+          <Amount variant="price" style={s.price}>{fmt(row.last_price)}</Amount>
           <Txt variant="muted" style={s.unit}>per unità</Txt>
           <Txt variant="muted" style={s.time}>Ultimo scambio · {timeAgo(row.last_trade_at, now)}</Txt>
         </View>
@@ -192,21 +193,24 @@ export default function Andamento() {
     <View style={{ flex: 1, backgroundColor: t.bg }}>
       <FlatList data={sortedRows} keyExtractor={(row) => row.item_id}
         renderItem={({ item }) => <StatCard row={item} wide={wide} now={now} onHelp={setHelp} />}
-        contentContainerStyle={s.list} showsVerticalScrollIndicator={false}
+        contentContainerStyle={pageContent} showsVerticalScrollIndicator={false}
         refreshing={refreshing} onRefresh={() => { setRefreshing(true); load() }}
-        ListHeaderComponent={<View style={s.header}>
-          <View style={s.headerRow}>
-            <View style={s.headerText}>
-              <Txt variant="title">Andamento</Txt>
-              <Txt variant="muted">Prezzi e scambi conclusi su PanEx</Txt>
+        ListHeaderComponent={<View style={{ gap: 14 }}>
+          <TopNav />
+          <View style={s.header}>
+            <View style={s.headerRow}>
+              <View style={s.headerText}>
+                <Txt variant="title">Andamento</Txt>
+                <Txt variant="muted">Prezzi e scambi conclusi su PanEx</Txt>
+              </View>
+              <View style={s.sortColumn}>
+                <Txt variant="muted" style={s.sortLabel}>Ordina per</Txt>
+                <Select value={sort} options={width < 600 ? COMPACT_SORTS : SORTS}
+                  onChange={setSort} width={sortWidth} />
+              </View>
             </View>
-            <View style={s.sortColumn}>
-              <Txt variant="muted" style={s.sortLabel}>Ordina per</Txt>
-              <Select value={sort} options={width < 600 ? COMPACT_SORTS : SORTS}
-                onChange={setSort} width={sortWidth} />
-            </View>
+            {!!error && <Txt variant="error">{error}</Txt>}
           </View>
-          {!!error && <Txt variant="error">{error}</Txt>}
         </View>}
         ListEmptyComponent={loading
           ? <ActivityIndicator color={t.green} />
@@ -224,7 +228,6 @@ export default function Andamento() {
 }
 
 const s = StyleSheet.create({
-  list: { padding: 14, gap: 14 },
   header: { gap: 4, marginBottom: 2 },
   headerRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
   headerText: { flex: 1, minWidth: 0, gap: 4 },

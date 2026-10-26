@@ -7,6 +7,7 @@ import { useToast } from '@/lib/toast'
 import { useTheme } from '@/theme'
 import { fmtDate, money } from '@/lib/format'
 import { Amount, Badge, Btn, Card, ItemIcon, Txt, fmt } from '@/components/ui'
+import { TopNav, pageContent } from '@/components/shell'
 import { ConfirmDialog } from '@/components/dialogs'
 
 type Order = {
@@ -110,7 +111,8 @@ export default function Ordini() {
 
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 14, gap: 14 }}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={pageContent}>
+        <TopNav />
         <Txt variant="muted">I Tosi restano bloccati finché il compratore non preme Ricevuto, dopo lo scambio in gioco.</Txt>
         {!!error && <Txt variant="error">{error}</Txt>}
         <Txt variant="title">Da fare</Txt>

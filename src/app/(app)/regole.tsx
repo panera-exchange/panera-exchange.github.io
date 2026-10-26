@@ -2,6 +2,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
 import { fonts, useTheme } from '@/theme'
 import { Card, Txt } from '@/components/ui'
+import { TopNav, pageContent } from '@/components/shell'
 
 // Testo provvisorio, ripreso dal regolamento di PanEx 1.0: alcuni articoli (es. 02 e 03) vanno ancora rivisti.
 const ARTICLES = [
@@ -40,7 +41,8 @@ export default function Regole() {
   const t = useTheme()
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 14, gap: 14 }}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={pageContent}>
+        <TopNav />
         <View style={s.heading}>
           <View style={s.seal}>
             <View style={s.sealInner}>

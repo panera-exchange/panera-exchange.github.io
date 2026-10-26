@@ -8,6 +8,7 @@ import { useToast } from '@/lib/toast'
 import { useTheme } from '@/theme'
 import { fmtDate, money } from '@/lib/format'
 import { Amount, Btn, Card, Grid, Txt, fmt } from '@/components/ui'
+import { TopNav, pageContent } from '@/components/shell'
 import { ConfirmDialog } from '@/components/dialogs'
 import { ArticleDialog, BcpDialog } from '@/components/home-dialogs'
 
@@ -92,7 +93,8 @@ export default function Home() {
 
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 14, gap: 14 }}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={pageContent}>
+        <TopNav />
         <Txt variant="muted">Benvenuto{username ? `, ${username}` : ''}. Qui trovi i dati della Banca Centrale Panera e le novità.</Txt>
         {!!error && <Txt variant="error">{error}</Txt>}
         {cards && <Grid data={cards} keyOf={(c) => c.key} render={(c) => c.node} />}

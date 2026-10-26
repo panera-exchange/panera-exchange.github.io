@@ -93,14 +93,15 @@ export function Nav({ bottom }: { bottom?: boolean }) {
   const path = usePathname()
   const router = useRouter()
   const insets = useSafeAreaInsets()
-  // Su telefono le due principali hanno una riga tutta loro, sopra le altre quattro.
+  // Su telefono le due principali hanno una riga tutta loro, sopra le altre quattro:
+  // dimensione normale invece di "big", ma comunque più grandi delle altre (che sono compatte).
   const tabs = bottom ? [...TABS.filter((x) => x.main), ...TABS.filter((x) => !x.main)] : TABS
   const buttons = tabs.map((tab) => {
     const active = path === tab.href
     return (
       <View key={tab.href} style={bottom ? { width: tab.main ? '50%' : '25%', padding: 3 } : undefined}>
         <Btn title={tab.label} accessibilityLabel={tab.label} variant="nav" color={active ? tab.light : tab.dark}
-          full={bottom} compact={bottom && !tab.main} big={tab.main} active={active} onPress={() => router.navigate(tab.href)} />
+          full={bottom} compact={bottom && !tab.main} big={tab.main && !bottom} active={active} onPress={() => router.navigate(tab.href)} />
       </View>
     )
   })
@@ -111,10 +112,21 @@ export function Nav({ bottom }: { bottom?: boolean }) {
     </View>
   )
   return (
-    <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: 8, paddingVertical: 10 }}>
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: 8 }}>
       {buttons}
     </View>
   )
+}
+
+// Contenuto scorrevole di ogni pagina: lo scroll occupa tutta la finestra (così la rotella funziona
+// anche ai lati), mentre il contenuto resta centrato e largo al massimo 980.
+export const pageContent = { padding: 14, gap: 14, width: '100%', maxWidth: 980, alignSelf: 'center' } as const
+
+// Menu su schermi larghi: va messo in cima al contenuto scorrevole di ogni pagina,
+// così scorre via con la pagina mentre l'intestazione resta fissa. Su telefono c'è la barra in basso.
+export function TopNav() {
+  const { width } = useWindowDimensions()
+  return width >= 700 ? <Nav /> : null
 }
 
 // Firma dell'autore: una riga grigia e discreta, senza link.

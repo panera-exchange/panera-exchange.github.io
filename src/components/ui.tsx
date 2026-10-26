@@ -68,24 +68,25 @@ export function ItemIcon({ id, size = 44 }: { id: string; size?: number }) {
   )
 }
 
-// Moneta Tosi. Abbassata un po' per allinearla alle lettere del font VT323.
-export function TosiIcon({ size = 20 }: { size?: number }) {
+// Moneta Tosi, come una lettera in più del testo: si passa la dimensione del font accanto.
+// L'immagine è ritagliata attorno alla T (17×14 pixel di disegno) ed è alta quanto le maiuscole
+// di VT323 (0,56 del font, centrate nella riga), così sta in linea con le cifre.
+export function TosiIcon({ fontSize = 22 }: { fontSize?: number }) {
+  const height = Math.round(fontSize * 0.6)
   return (
-    <Image source={require('@/assets/images/tosi.png')}
-      style={{ width: size, height: size, transform: [{ translateY: Math.round(size * 0.05) }] }}
+    <Image source={require('@/assets/images/tosi-glyph.png')}
+      style={{ width: Math.round(height * 17 / 14), height }}
       contentFit="contain" accessibilityLabel="Tosi" />
   )
 }
 
 // Importo in Tosi: testo, moneta, e un testo facoltativo dopo (es. "/ unità").
-// La moneta è grande in proporzione al testo, se non si indica iconSize.
-export function Amount({ children, after, iconSize, ...props }:
-  TextProps & { variant?: Variant; iconSize?: number; after?: string }) {
+export function Amount({ children, after, ...props }: TextProps & { variant?: Variant; after?: string }) {
   const fontSize = StyleSheet.flatten(props.style)?.fontSize ?? 22
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: Math.round(fontSize * 0.25) }}>
       <Txt {...props}>{children}</Txt>
-      <TosiIcon size={iconSize ?? Math.round(fontSize * 2.25)} />
+      <TosiIcon fontSize={fontSize} />
       {!!after && <Txt {...props}>{after}</Txt>}
     </View>
   )
@@ -95,7 +96,7 @@ export function BalanceChip() {
   const { balance } = useSession()
   return (
     <View style={s.chip}>
-      <TosiIcon size={32} />
+      <TosiIcon fontSize={24} />
       <Text style={{ fontFamily: fonts.body, fontSize: 24, color: '#fff' }}>
         {balance === null ? '...' : fmtBalance(balance)}
       </Text>
@@ -177,7 +178,7 @@ const s = StyleSheet.create({
   btn: { paddingHorizontal: 12, paddingVertical: 4, borderWidth: 3, borderTopColor: 'rgba(255,255,255,0.35)', borderLeftColor: 'rgba(255,255,255,0.35)', borderBottomColor: 'rgba(0,0,0,0.35)', borderRightColor: 'rgba(0,0,0,0.35)' },
   card: { borderWidth: 3, padding: 12, boxShadow: '4px 4px 0px #000' },
   badge: { alignSelf: 'flex-start', borderWidth: 2, paddingHorizontal: 6 },
-  chip: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#262626', borderWidth: 3, borderColor: '#000', paddingHorizontal: 10, paddingVertical: 2 },
+  chip: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#262626', borderWidth: 3, borderColor: '#000', paddingHorizontal: 10, paddingVertical: 4 },
   select: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderWidth: 3, paddingHorizontal: 8, paddingVertical: 4 },
   selectMenu: { position: 'absolute', elevation: 8 },
 })

@@ -6,6 +6,7 @@ import { useSession } from '@/lib/session'
 import { useTheme } from '@/theme'
 import { fmtDate, money, sumMoney } from '@/lib/format'
 import { Amount, Badge, Btn, Card, Checkbox, Grid, ItemIcon, Txt, fmt } from '@/components/ui'
+import { TopNav, pageContent } from '@/components/shell'
 
 // Scambio concluso, pubblico: lo vedono tutti gli utenti.
 type Trade = {
@@ -103,7 +104,7 @@ export default function Movimenti() {
           <Txt variant="muted">{x.seller ?? '?'} → {x.buyer ?? '?'} · {fmtDate(x.closed_at)}</Txt>
           {(sold || bought) && <View style={{ marginTop: 4 }}><Badge text={sold ? 'Tua vendita' : 'Tuo acquisto'} tone={sold ? 'green' : 'gold'} /></View>}
         </View>
-        <Amount style={{ color }} iconSize={36}>{sold ? '+' : bought ? '-' : ''}{fmt(total)}</Amount>
+        <Amount style={{ color }}>{sold ? '+' : bought ? '-' : ''}{fmt(total)}</Amount>
       </View>
     )
   }
@@ -117,18 +118,19 @@ export default function Movimenti() {
           <Txt>{title}</Txt>
           <Txt variant="muted">{detail} · {fmtDate(e.created_at)}</Txt>
         </View>
-        <Amount style={{ color: positive ? t.pos : t.red }} iconSize={36}>{positive ? '+' : ''}{fmt(e.amount)}</Amount>
+        <Amount style={{ color: positive ? t.pos : t.red }}>{positive ? '+' : ''}{fmt(e.amount)}</Amount>
       </View>
     )
   }
 
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 14, gap: 14 }}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={pageContent}>
+        <TopNav />
         <Grid data={stats} keyOf={(x) => x.key} render={(x) => (
           <Card>
             <Txt variant="muted">{x.label}</Txt>
-            <Amount variant={x.price ? 'price' : 'body'} style={{ fontSize: 36, lineHeight: 42 }} iconSize={50}>{x.value}</Amount>
+            <Amount variant={x.price ? 'price' : 'body'} style={{ fontSize: 36, lineHeight: 42 }}>{x.value}</Amount>
           </Card>
         )} />
         {!!error && <Txt variant="error">{error}</Txt>}

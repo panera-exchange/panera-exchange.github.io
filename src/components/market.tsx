@@ -6,6 +6,7 @@ import { useSession } from '@/lib/session'
 import { useToast } from '@/lib/toast'
 import { fonts, useTheme } from '@/theme'
 import { Amount, Badge, Btn, Card, Checkbox, ItemIcon, Select, Txt, fmt } from '@/components/ui'
+import { TopNav, pageContent } from '@/components/shell'
 import { ConfirmDialog, Dialog, ListingDialog } from '@/components/dialogs'
 import { compareMoney, money, subtractMoney } from '@/lib/format'
 
@@ -122,7 +123,8 @@ export function Market({ kind }: { kind: Kind }) {
 
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 14, gap: 14 }}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={pageContent}>
+        <TopNav />
         <Txt variant="muted">
           {isReq ? 'Item che altri cercano: vendi quello che hai.' : 'Item in vendita: scegli cosa comprare.'}
         </Txt>
