@@ -18,7 +18,18 @@ export function Logo({ size = 22 }: { size?: number }) {
   )
 }
 
-// Intestazione: logo, saldo, utente e pulsante Esci.
+// Pulsante delle regole del mercato: color diamante, acceso quando la pagina è aperta.
+function RulesButton() {
+  const path = usePathname()
+  const router = useRouter()
+  const active = path === '/regole'
+  return (
+    <Btn title="Regole" variant="nav" color={active ? '#2fa7ad' : '#1d5e63'} active={active}
+      onPress={() => router.navigate('/regole')} />
+  )
+}
+
+// Intestazione: logo, regole, utente, saldo e pulsante Esci.
 export function AppHeader() {
   const { username } = useSession()
   const insets = useSafeAreaInsets()
@@ -34,22 +45,27 @@ export function AppHeader() {
   return (
     <View style={{ backgroundColor: '#3a3a3a', borderBottomWidth: 4, borderBottomColor: '#000', paddingTop: insets.top }}>
       <View style={{ width: '100%', maxWidth: 980, alignSelf: 'center', flexDirection: 'row', alignItems: narrow ? 'flex-start' : 'center',
-        justifyContent: 'space-between', flexWrap: narrow ? 'nowrap' : 'wrap', gap: 10, padding: 12 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-          <Image
-            source={require('@/assets/images/logo.gif')}
-            style={{ width: 72, height: 72 }}
-            contentFit="contain"
-            accessibilityLabel="Logo PanEx"
-          />
-          <View>
-            <Logo />
-            <Text style={{ fontFamily: fonts.body, fontSize: 18, color: '#c8c8c8', marginTop: 4 }}>Panera Exchange</Text>
+        justifyContent: 'space-between', flexWrap: narrow ? 'nowrap' : 'wrap', gap: 10, paddingHorizontal: 12, paddingVertical: 6 }}>
+        {/* Su telefono le regole vanno sotto il logo, perché a destra lo spazio è già pieno. */}
+        <View style={{ alignItems: 'flex-start', gap: 6 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Image
+              source={require('@/assets/images/logo.gif')}
+              style={{ width: 56, height: 56 }}
+              contentFit="contain"
+              accessibilityLabel="Logo PanEx"
+            />
+            <View>
+              <Logo />
+              <Text style={{ fontFamily: fonts.body, fontSize: 18, color: '#c8c8c8', marginTop: 2 }}>Panera Exchange</Text>
+            </View>
           </View>
+          {narrow && <RulesButton />}
         </View>
         {/* Su telefono: saldo ed Esci, poi il nome, poi chi è online, tutto allineato a destra. */}
-        <View style={{ alignItems: 'flex-end', gap: 6, flexShrink: 1 }}>
+        <View style={{ alignItems: 'flex-end', gap: 4, flexShrink: 1 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+            {!narrow && <RulesButton />}
             {!narrow && name}
             {balanceAndExit}
           </View>
@@ -77,14 +93,15 @@ export function Nav({ bottom }: { bottom?: boolean }) {
   const path = usePathname()
   const router = useRouter()
   const insets = useSafeAreaInsets()
-  // Su telefono le due principali hanno una riga tutta loro, sopra le altre quattro.
+  // Su telefono le due principali hanno una riga tutta loro, sopra le altre quattro:
+  // dimensione normale invece di "big", ma comunque più grandi delle altre (che sono compatte).
   const tabs = bottom ? [...TABS.filter((x) => x.main), ...TABS.filter((x) => !x.main)] : TABS
   const buttons = tabs.map((tab) => {
     const active = path === tab.href
     return (
       <View key={tab.href} style={bottom ? { width: tab.main ? '50%' : '25%', padding: 3 } : undefined}>
         <Btn title={tab.label} accessibilityLabel={tab.label} variant="nav" color={active ? tab.light : tab.dark}
-          full={bottom} compact={bottom && !tab.main} big={tab.main} active={active} onPress={() => router.navigate(tab.href)} />
+          full={bottom} compact={bottom && !tab.main} big={tab.main && !bottom} active={active} onPress={() => router.navigate(tab.href)} />
       </View>
     )
   })
@@ -95,10 +112,21 @@ export function Nav({ bottom }: { bottom?: boolean }) {
     </View>
   )
   return (
-    <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: 8, paddingVertical: 16 }}>
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: 8 }}>
       {buttons}
     </View>
   )
+}
+
+// Contenuto scorrevole di ogni pagina: lo scroll occupa tutta la finestra (così la rotella funziona
+// anche ai lati), mentre il contenuto resta centrato e largo al massimo 980.
+export const pageContent = { padding: 14, gap: 14, width: '100%', maxWidth: 980, alignSelf: 'center' } as const
+
+// Menu su schermi larghi: va messo in cima al contenuto scorrevole di ogni pagina,
+// così scorre via con la pagina mentre l'intestazione resta fissa. Su telefono c'è la barra in basso.
+export function TopNav() {
+  const { width } = useWindowDimensions()
+  return width >= 700 ? <Nav /> : null
 }
 
 // Firma dell'autore: una riga grigia e discreta, senza link.

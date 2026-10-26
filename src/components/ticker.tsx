@@ -57,7 +57,7 @@ export function Ticker() {
                 {r.items?.name ?? '?'} ×{fmt(r.quantity)}
               </Text>
               <Text style={[s.text, { color }]}>{fmt(r.unit_price)}</Text>
-              <TosiIcon size={30} />
+              <TosiIcon fontSize={20} />
             </View>
           )
         })}
@@ -74,8 +74,8 @@ export function Ticker() {
 }
 
 const s = StyleSheet.create({
-  bar: { height: 44, justifyContent: 'center', overflow: 'hidden', backgroundColor: '#0d1a0d', borderBottomWidth: 2, borderBottomColor: '#1a3a1a' },
+  bar: { height: 30, justifyContent: 'center', overflow: 'hidden', backgroundColor: '#0d1a0d', borderBottomWidth: 2, borderBottomColor: '#1a3a1a' },
   strip: { flexDirection: 'row', alignItems: 'center' },
-  item: { gap: 6, marginRight: 40 },
-  text: { fontFamily: fonts.body, fontSize: 22 },
+  item: { gap: 5, marginRight: 32 },
+  text: { fontFamily: fonts.body, fontSize: 20 },
 })

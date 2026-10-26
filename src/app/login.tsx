@@ -6,6 +6,7 @@ import { useSession } from '@/lib/session'
 import { fonts, useTheme } from '@/theme'
 import { Btn, Card, Txt } from '@/components/ui'
 import { Footer, Logo } from '@/components/shell'
+import { Splash } from '@/components/splash'
 
 export default function Login() {
   const { session } = useSession()
@@ -29,6 +30,7 @@ export default function Login() {
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={s.screen}>
+      <View style={{ width: '100%', maxWidth: 380, marginBottom: 32 }}><Splash /></View>
       <Card style={{ width: '100%', maxWidth: 380, gap: 12 }}>
         <Logo size={20} />
         <Txt variant="muted">Panera Exchange · accesso su invito</Txt>

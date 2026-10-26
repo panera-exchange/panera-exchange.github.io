@@ -45,7 +45,7 @@ Built with Expo / React Native (web first) and Supabase. Invite only: accounts a
 - [ ] Android build
 - [ ] Player skins, item categories
 - [ ] Choose the publication date of articles
-- [ ] Funny quotes on the login screen
+- [x] Funny quotes on the login screen
 - [x] Online presence
 - [ ] Sound or haptic feedback
 
