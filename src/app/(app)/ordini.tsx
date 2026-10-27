@@ -5,15 +5,23 @@ import { supabase } from '@/lib/supabase'
 import { useSession } from '@/lib/session'
 import { useToast } from '@/lib/toast'
 import { useTheme } from '@/theme'
-import { fmtDate, money } from '@/lib/format'
+import { fmtDate, lots, money, stacks } from '@/lib/format'
 import { Amount, Badge, Btn, Card, ItemIcon, Txt, fmt } from '@/components/ui'
 import { TopNav, pageContent } from '@/components/shell'
 import { ConfirmDialog } from '@/components/dialogs'
 
+// quantity conta i lotti presi, ciascuno da lot_size pezzi al prezzo lot_price.
 type Order = {
-  id: string; quantity: number; unit_price: string; status: 'pending' | 'completed' | 'cancelled'
+  id: string; quantity: number; lot_size: number; lot_price: string; status: 'pending' | 'completed' | 'cancelled'
   created_at: string; buyer_id: string; seller_id: string; item_id: string
-  items: { name: string } | null; buyer: { username: string } | null; seller: { username: string } | null
+  items: { name: string; stack_size: number } | null; buyer: { username: string } | null; seller: { username: string } | null
+}
+
+// "128 Cookie (2 stack)": i pezzi da scambiare in gioco.
+function piecesText(o: Order): string {
+  const pieces = o.quantity * o.lot_size
+  const hint = stacks(pieces, o.items?.stack_size ?? 64)
+  return `${fmt(pieces)} ${o.items?.name ?? o.item_id}${hint ? ` (${hint})` : ''}`
 }
 type Pending = { order: Order; type: 'confirm' | 'cancel' }
 
@@ -36,7 +44,7 @@ export default function Ordini() {
   const load = useCallback(async () => {
     const { data, error } = await supabase
       .from('orders')
-      .select('id, quantity, unit_price::text, status, created_at, buyer_id, seller_id, item_id, items(name), buyer:profiles!buyer_id(username), seller:profiles!seller_id(username)')
+      .select('id, quantity, lot_size, lot_price::text, status, created_at, buyer_id, seller_id, item_id, items(name, stack_size), buyer:profiles!buyer_id(username), seller:profiles!seller_id(username)')
       .order('created_at', { ascending: false })
     if (error) setError(error.message)
     else {
@@ -60,7 +68,7 @@ export default function Ordini() {
     if (error) return setErr(error.message)
     setAction(null)
     toast(action.type === 'confirm'
-      ? `Scambio concluso: ${fmt(money(action.order.unit_price, action.order.quantity))} Tosi a ${action.order.seller?.username}.`
+      ? `Scambio concluso: ${fmt(money(action.order.lot_price, action.order.quantity))} Tosi a ${action.order.seller?.username}.`
       : 'Ordine annullato.')
     await refreshBalance()
     load()
@@ -68,8 +76,8 @@ export default function Ordini() {
 
   function dialogText(a: Pending) {
     const o = a.order
-    const total = fmt(money(o.unit_price, o.quantity))
-    if (a.type === 'confirm') return `Confermi di aver ricevuto ${o.quantity} ${o.items?.name ?? o.item_id}? I ${total} Tosi andranno a ${o.seller?.username}. Non si può annullare.`
+    const total = fmt(money(o.lot_price, o.quantity))
+    if (a.type === 'confirm') return `Confermi di aver ricevuto ${piecesText(o)}? I ${total} Tosi andranno a ${o.seller?.username}. Non si può annullare.`
     return o.buyer_id === me
       ? `L'ordine verrà annullato e i ${total} Tosi ti verranno restituiti.`
       : `L'ordine verrà annullato e i ${total} Tosi torneranno a ${o.buyer?.username}.`
@@ -84,17 +92,18 @@ export default function Ordini() {
           <View style={s.row}>
             <ItemIcon id={o.item_id} />
             <View style={{ flex: 1, minWidth: 0 }}>
-              <Txt variant="title">{o.quantity} × {name}</Txt>
+              <Txt variant="title">{fmt(o.quantity * o.lot_size)} × {name}</Txt>
+              {o.lot_size > 1 && <Txt variant="muted">{lots(o.quantity)} da {fmt(o.lot_size)}</Txt>}
               <Txt variant="muted">{buyer ? `Acquisto da ${o.seller?.username}` : `Vendita a ${o.buyer?.username}`} · {fmtDate(o.created_at)}</Txt>
             </View>
           </View>
           <View style={{ marginTop: 8 }}>
-            <Amount variant="price">{fmt(money(o.unit_price, o.quantity))}</Amount>
+            <Amount variant="price">{fmt(money(o.lot_price, o.quantity))}</Amount>
           </View>
           {o.status === 'pending' && (
             <Txt style={{ marginTop: 4 }}>
               {buyer ? `Aspetta la consegna da ${o.seller?.username} in gioco, poi premi Ricevuto.`
-                : `Consegna ${o.quantity} ${name} a ${o.buyer?.username} in gioco.`}
+                : `Consegna ${piecesText(o)} a ${o.buyer?.username} in gioco.`}
             </Txt>
           )}
           <View style={{ marginTop: 8 }}><Badge text={STATUS[o.status]} tone={TONE[o.status]} /></View>

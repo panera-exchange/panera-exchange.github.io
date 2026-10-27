@@ -43,6 +43,13 @@ export function exceedsTosiLimit(text: string, wholeLimit: bigint): boolean {
 export const money = (value: string | number, quantity = 1): string => fromUnits(units(value) * BigInt(quantity))
 export const sumMoney = (values: (string | number)[]): string => fromUnits(values.reduce<bigint>((sum, value) => sum + units(value), 0n))
 export const subtractMoney = (left: string | number, right: string | number): string => fromUnits(units(left) - units(right))
+// Prezzo di un singolo pezzo di un lotto, arrotondato a 5 decimali come round(x, 5) nel database.
+export function perUnit(lotPrice: string | number, lotSize: number): string {
+  const amount = units(lotPrice)
+  const size = BigInt(lotSize)
+  const rounded = (2n * (amount < 0n ? -amount : amount) + size) / (2n * size)
+  return fromUnits(amount < 0n ? -rounded : rounded)
+}
 export const compareMoney = (left: string | number, right: string | number): number => {
   const a = units(left)
   const b = units(right)
@@ -64,4 +71,14 @@ export function fmtBalance(value: string | number): string {
   const cents = (absolute + 500n) / 1000n
   const grouped = String(cents / 100n).replace(/\B(?=(\d{3})+(?!\d))/g, '.')
   return `${negative && cents !== 0n ? '-' : ''}${grouped},${String(cents % 100n).padStart(2, '0')}`
+}
+
+export const lots = (n: number): string => `${fmt(n)} ${n === 1 ? 'lotto' : 'lotti'}`
+
+// Come si contano i pezzi in gioco: "2 stack", "1 shulker" (27 stack). Vuoto se non è un numero tondo.
+export function stacks(pieces: number, stackSize: number): string {
+  const shulker = stackSize * 27
+  if (pieces >= shulker && pieces % shulker === 0) return `${fmt(pieces / shulker)} shulker`
+  if (stackSize > 1 && pieces % stackSize === 0) return `${fmt(pieces / stackSize)} stack`
+  return ''
 }

@@ -10,7 +10,7 @@ import { TopNav, pageContent } from '@/components/shell'
 
 // Scambio concluso, pubblico: lo vedono tutti gli utenti.
 type Trade = {
-  id: string; item_id: string; item_name: string; quantity: number; unit_price: string
+  id: string; item_id: string; item_name: string; quantity: number; lot_size: number; lot_price: string
   buyer_id: string; buyer: string | null; seller_id: string; seller: string | null; closed_at: string
 }
 // Voce del proprio conto non legata a uno scambio (es. Tosi assegnati dall'admin): la vede solo il titolare.
@@ -51,7 +51,7 @@ export default function Movimenti() {
       supabase.from('ledger').select('id, amount::text, kind, memo, created_at').is('order_id', null)
         .order('created_at', { ascending: false }).limit(100),
       // Tosi bloccati: ordini in attesa in cui sono il compratore.
-      supabase.from('orders').select('quantity, unit_price::text').eq('status', 'pending').eq('buyer_id', me ?? ''),
+      supabase.from('orders').select('quantity, lot_price::text').eq('status', 'pending').eq('buyer_id', me ?? ''),
     ])
     const failure = tr.error ?? ledger.error ?? pending.error
     if (failure) return setError(failure.message)
@@ -60,7 +60,7 @@ export default function Movimenti() {
     setTrades(page)
     setHasMore(page.length === PAGE)
     setEntries((ledger.data ?? []) as Entry[])
-    setBlocked(sumMoney((pending.data ?? []).map((o) => money(o.unit_price, o.quantity))))
+    setBlocked(sumMoney((pending.data ?? []).map((o) => money(o.lot_price, o.quantity))))
   }, [fetchTrades, refreshBalance, me])
 
   useFocusEffect(useCallback(() => { load() }, [load]))
@@ -92,7 +92,7 @@ export default function Movimenti() {
   ]
 
   function tradeRow(x: Trade) {
-    const total = money(x.unit_price, x.quantity)
+    const total = money(x.lot_price, x.quantity)
     const sold = x.seller_id === me
     const bought = x.buyer_id === me
     const color = sold ? t.pos : bought ? t.red : t.muted
@@ -100,7 +100,7 @@ export default function Movimenti() {
       <View style={[s.line, (sold || bought) && { backgroundColor: MINE.bg, borderLeftColor: MINE.bar }]}>
         <ItemIcon id={x.item_id} size={36} />
         <View style={{ flex: 1, minWidth: 0 }}>
-          <Txt>{fmt(x.quantity)} {x.item_name}</Txt>
+          <Txt>{fmt(x.quantity * x.lot_size)} {x.item_name}</Txt>
           <Txt variant="muted">{x.seller ?? '?'} → {x.buyer ?? '?'} · {fmtDate(x.closed_at)}</Txt>
           {(sold || bought) && <View style={{ marginTop: 4 }}><Badge text={sold ? 'Tua vendita' : 'Tuo acquisto'} tone={sold ? 'green' : 'gold'} /></View>}
         </View>
