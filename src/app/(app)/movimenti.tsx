@@ -24,6 +24,7 @@ const ACCOUNT = { bg: 'rgba(58, 108, 192, 0.18)', bar: '#3a6cc0' }
 function describe(e: Entry): [string, string] {
   switch (e.kind) {
     case 'grant': return ['Tosi ricevuti', e.memo ?? "Assegnati dall'amministratore"]
+    case 'rescale': return ['Cambio del tasso BCP', e.memo ?? 'Saldo ricalcolato al nuovo tasso']
     default: return ['Movimento del conto', e.memo ?? e.kind]
   }
 }

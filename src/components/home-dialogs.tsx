@@ -62,6 +62,10 @@ export function BcpDialog({ rate, reserve, onClose, onDone }: {
   const [err, setErr] = useState('')
   const input = [s.input, { borderColor: t.line, backgroundColor: t.panel, color: t.ink }]
   const parsedRate = parseTosi(r)
+  // Cambiando il tasso il database ricalcola saldi e prezzi (update_bcp): l'admin lo deve sapere prima.
+  const rescale = !!parsedRate && compareMoney(rate, '0') > 0 && compareMoney(parsedRate.value, '0.00001') >= 0
+    && compareMoney(parsedRate.value, rate) !== 0
+  const ratio = rescale ? (Number(parsedRate.value) / Number(rate)).toLocaleString('it-IT', { maximumFractionDigits: 5 }) : ''
 
   async function save() {
     const reserveN = Number(v)
@@ -74,21 +78,31 @@ export function BcpDialog({ rate, reserve, onClose, onDone }: {
     const { error } = await supabase.rpc('update_bcp', { p_rate: parsedRate.value, p_reserve: reserveN })
     setBusy(false)
     if (error) return setErr(error.message)
-    onDone('Dati BCP aggiornati.')
+    onDone(rescale ? 'Dati BCP aggiornati: saldi e prezzi ricalcolati al nuovo tasso.' : 'Dati BCP aggiornati.')
   }
 
   return (
-    <Dialog onClose={onClose}>
+    <Dialog onClose={onClose} scrollable>
       <Txt variant="title">Dati BCP</Txt>
       <Txt variant="muted">Tosi per 1 diamante</Txt>
       <TextInput value={r} onChangeText={setR} keyboardType="decimal-pad" style={input} />
       {parsedRate?.truncated && <Txt variant="muted">Verrà salvato come {fmt(parsedRate.value)} Tosi.</Txt>}
       <Txt variant="muted">Riserva totale (diamanti)</Txt>
       <TextInput value={v} onChangeText={setV} keyboardType="number-pad" style={input} />
+      {rescale && (
+        <View style={[s.warning, { borderColor: t.gold }]}>
+          <Txt variant="title">Attenzione</Txt>
+          <Txt>
+            Da {fmt(rate)} a {fmt(parsedRate.value)} Tosi per diamante: saldi di tutti gli utenti e prezzi di tutti gli
+            annunci (anche esauriti) verranno moltiplicati per {ratio}, così mantengono lo stesso valore in diamanti.
+          </Txt>
+          <Txt variant="muted">Gli ordini in attesa non cambiano: si chiudono alla cifra concordata. Non si può annullare.</Txt>
+        </View>
+      )}
       {!!err && <Txt variant="error">{err}</Txt>}
       <View style={s.row}>
         <Btn title="Annulla" variant="alt" onPress={onClose} />
-        <Btn title="Salva" onPress={save} disabled={busy} />
+        <Btn title={rescale ? 'Salva e ricalcola' : 'Salva'} variant={rescale ? 'danger' : 'primary'} onPress={save} disabled={busy} />
       </View>
     </Dialog>
   )
@@ -97,4 +111,5 @@ export function BcpDialog({ rate, reserve, onClose, onDone }: {
 const s = StyleSheet.create({
   input: { borderWidth: 3, paddingHorizontal: 8, paddingVertical: 4, fontFamily: fonts.body, fontSize: 22 },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, alignItems: 'center' },
+  warning: { borderWidth: 3, padding: 8, gap: 4 },
 })
