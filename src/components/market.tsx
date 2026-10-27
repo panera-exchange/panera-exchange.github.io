@@ -226,8 +226,8 @@ function OrderDialog({ row, isReq, onClose, onDone }: {
     if (error) return setErr(error.message)
     await refreshBalance()
     onDone(isReq
-      ? `Consegna ${piecesText(row, n)} a ${owner} in gioco. Quando conferma, ricevi ${fmt(total)} Tosi.`
-      : `${fmt(total)} Tosi bloccati. Ritira ${piecesText(row, n)} da ${owner} in gioco, poi premi Ricevuto.`)
+      ? `Consegna ${piecesText(row, n)} a ${owner} in gioco e premi Consegnato in Ordini. Quando conferma, ricevi ${fmt(total)} Tosi.`
+      : `${fmt(total)} Tosi bloccati. Quando ${owner} consegna in gioco riceverai un avviso: ritira gli item e premi Ricevuto.`)
   }
 
   return (

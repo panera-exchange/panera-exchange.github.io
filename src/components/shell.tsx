@@ -4,6 +4,7 @@ import { usePathname, useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { supabase } from '@/lib/supabase'
 import { useSession } from '@/lib/session'
+import { useOrderAlerts } from '@/lib/order-alerts'
 import { fonts } from '@/theme'
 import { BalanceChip, Btn } from '@/components/ui'
 import { OnlineBadge } from '@/components/online-badge'
@@ -93,6 +94,7 @@ export function Nav({ bottom }: { bottom?: boolean }) {
   const path = usePathname()
   const router = useRouter()
   const insets = useSafeAreaInsets()
+  const { todo } = useOrderAlerts()
   // Su telefono le due principali hanno una riga tutta loro, sopra le altre quattro:
   // dimensione normale invece di "big", ma comunque più grandi delle altre (che sono compatte).
   const tabs = bottom ? [...TABS.filter((x) => x.main), ...TABS.filter((x) => !x.main)] : TABS
@@ -102,6 +104,13 @@ export function Nav({ bottom }: { bottom?: boolean }) {
       <View key={tab.href} style={bottom ? { width: tab.main ? '50%' : '25%', padding: 3 } : undefined}>
         <Btn title={tab.label} accessibilityLabel={tab.label} variant="nav" color={active ? tab.light : tab.dark}
           full={bottom} compact={bottom && !tab.main} big={tab.main && !bottom} active={active} onPress={() => router.navigate(tab.href)} />
+        {/* Ordini che aspettano una mia azione: da consegnare o da ritirare. */}
+        {tab.href === '/ordini' && todo > 0 && (
+          <View pointerEvents="none" style={{ position: 'absolute', top: bottom ? -4 : -10, right: bottom ? -2 : -10, minWidth: 24, height: 24,
+            paddingHorizontal: 4, alignItems: 'center', justifyContent: 'center', backgroundColor: '#e02020', borderWidth: 2, borderColor: '#000' }}>
+            <Text style={{ fontFamily: fonts.body, fontSize: 18, lineHeight: 20, color: '#fff' }}>{todo > 99 ? '99+' : todo}</Text>
+          </View>
+        )}
       </View>
     )
   })

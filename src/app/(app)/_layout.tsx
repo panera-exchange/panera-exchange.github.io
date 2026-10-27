@@ -2,6 +2,7 @@ import { ActivityIndicator, View, useWindowDimensions } from 'react-native'
 import { Redirect, Slot } from 'expo-router'
 import { useSession } from '@/lib/session'
 import { PresenceProvider } from '@/lib/presence'
+import { OrderAlertsProvider } from '@/lib/order-alerts'
 import { useTheme } from '@/theme'
 import { AppHeader, Nav } from '@/components/shell'
 import { Ticker } from '@/components/ticker'
@@ -18,6 +19,7 @@ export default function AppLayout() {
   const wide = width >= 700
   return (
     <PresenceProvider>
+      <OrderAlertsProvider>
       <View style={{ flex: 1, backgroundColor: t.bg }}>
         <AppHeader />
         <Ticker />
@@ -27,6 +29,7 @@ export default function AppLayout() {
         </View>
         {!wide && <Nav bottom />}
       </View>
+      </OrderAlertsProvider>
     </PresenceProvider>
   )
 }
