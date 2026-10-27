@@ -1,6 +1,6 @@
 import { useRef, useState, type ReactNode } from 'react'
 import { Image } from 'expo-image'
-import { Modal, Pressable, StyleSheet, Text, View, useWindowDimensions, type TextProps, type ViewProps } from 'react-native'
+import { Modal, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions, type TextProps, type ViewProps } from 'react-native'
 import { fonts, useTheme } from '@/theme'
 import { useSession } from '@/lib/session'
 import { fmtBalance } from '@/lib/format'
@@ -117,18 +117,29 @@ export function Checkbox({ label, value, onChange }: { label: string; value: boo
   )
 }
 
-// Menu a tendina semplice: l'elenco si apre sotto il campo.
+// Margine minimo tra l'elenco aperto e il bordo dello schermo.
+const SELECT_MARGIN = 16
+
+// Menu a tendina semplice: l'elenco si apre sotto il campo, o sopra se sotto c'è poco spazio.
+// Se non entra tutto nello schermo scorre, con la barra nascosta.
 export function Select<T extends string>({ value, options, onChange, width }: {
   value: T; options: { value: T; label: string }[]; onChange: (v: T) => void; width?: number
 }) {
   const t = useTheme()
+  const { height: screen } = useWindowDimensions()
   const anchorRef = useRef<View>(null)
-  const [anchor, setAnchor] = useState<{ x: number; top: number; width: number } | null>(null)
+  const [anchor, setAnchor] = useState<{ x: number; y: number; height: number; width: number } | null>(null)
   const box = [s.select, { borderColor: t.line, backgroundColor: t.panel }]
+  const below = anchor ? screen - anchor.y - anchor.height - SELECT_MARGIN : 0
+  const above = anchor ? anchor.y - SELECT_MARGIN : 0
+  const down = below >= 200 || below >= above
+  const place = !anchor ? null : down
+    ? { top: anchor.y + anchor.height, maxHeight: below }
+    : { bottom: screen - anchor.y, maxHeight: above }
 
   function toggle() {
     if (anchor) return setAnchor(null)
-    anchorRef.current?.measureInWindow((x, y, width, height) => setAnchor({ x, top: y + height, width }))
+    anchorRef.current?.measureInWindow((x, y, width, height) => setAnchor({ x, y, height, width }))
   }
 
   return (
@@ -141,13 +152,15 @@ export function Select<T extends string>({ value, options, onChange, width }: {
         <Modal transparent statusBarTranslucent animationType="none" onRequestClose={() => setAnchor(null)}>
           <View style={{ flex: 1 }}>
             <Pressable style={StyleSheet.absoluteFill} onPress={() => setAnchor(null)} />
-            <View style={[s.selectMenu, { left: anchor.x, top: anchor.top, width: anchor.width }]}>
-              {options.map((o) => (
-                <Pressable key={o.value} onPress={() => { onChange(o.value); setAnchor(null) }} style={[box, { borderTopWidth: 0 }]}>
+            <ScrollView style={[s.selectMenu, { left: anchor.x, width: anchor.width }, place]}
+              showsVerticalScrollIndicator={false} bounces={false} keyboardShouldPersistTaps="handled">
+              {options.map((o, i) => (
+                // Le voci si appoggiano a quella sopra (o al campo): solo la prima di un elenco aperto in alto ha il bordo superiore.
+                <Pressable key={o.value} onPress={() => { onChange(o.value); setAnchor(null) }} style={[box, (down || i > 0) && { borderTopWidth: 0 }]}>
                   <Txt>{o.label}</Txt>
                 </Pressable>
               ))}
-            </View>
+            </ScrollView>
           </View>
         </Modal>
       )}

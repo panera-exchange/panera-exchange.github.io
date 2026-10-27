@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { fonts } from '@/theme'
 import { TosiIcon, fmt } from '@/components/ui'
 
-type Row = { id: string; kind: 'offer' | 'request'; quantity: number; unit_price: string; items: { name: string } | null }
+type Row = { id: string; kind: 'offer' | 'request'; quantity: number; lot_size: number; lot_price: string; items: { name: string } | null }
 
 const SPEED = 60 // velocità di scorrimento, in pixel al secondo
 
@@ -21,7 +21,7 @@ export function Ticker() {
     let cancelled = false
     async function load() {
       const { data } = await supabase.from('listings')
-        .select('id, kind, quantity, unit_price::text, items(name)')
+        .select('id, kind, quantity, lot_size, lot_price::text, items(name)')
         .eq('status', 'open').order('created_at', { ascending: false }).limit(50)
       if (!cancelled && data) setRows(data as unknown as Row[])
     }
@@ -54,9 +54,9 @@ export function Ticker() {
             <View key={r.id} style={[s.strip, s.item]}>
               <Text style={[s.text, { color }]}>{r.kind === 'offer' ? '▲' : '▼'}</Text>
               <Text style={[s.text, { color: '#cccccc' }]}>
-                {r.items?.name ?? '?'} ×{fmt(r.quantity)}
+                {r.items?.name ?? '?'} ×{fmt(r.quantity)}{r.lot_size > 1 ? ` lotti da ${fmt(r.lot_size)}` : ''}
               </Text>
-              <Text style={[s.text, { color }]}>{fmt(r.unit_price)}</Text>
+              <Text style={[s.text, { color }]}>{fmt(r.lot_price)}</Text>
               <TosiIcon fontSize={20} />
             </View>
           )

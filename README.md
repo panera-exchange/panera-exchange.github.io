@@ -18,7 +18,7 @@ Built with Expo / React Native (web first) and Supabase. Invite only: accounts a
 
 ## ✨ Features
 
-- 📦 **Offers** and 📜 **Requests**: publish what you sell or what you look for, with price per unit. Partial purchases are allowed.
+- 📦 **Offers** and 📜 **Requests**: publish what you sell or what you look for, priced per lot (a single unit, a stack, a shulker or any size). Buyers choose how many lots to take, and sold-out listings can be restocked.
 - 🤝 **Orders**: Tosi are locked at purchase and paid to the seller when the buyer confirms the in-game delivery. Cancelling gives the Tosi back.
 - 🪙 **Movements**: balance and full ledger of every Tosi that moved.
 - 🏦 **Home**: BCP exchange rate, total reserve, total trades, and articles written by the admins.

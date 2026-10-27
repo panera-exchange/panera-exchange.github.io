@@ -8,13 +8,16 @@ import { fonts, useTheme } from '@/theme'
 import { Amount, Badge, Btn, Card, Checkbox, ItemIcon, Select, Txt, fmt } from '@/components/ui'
 import { TopNav, pageContent } from '@/components/shell'
 import { ConfirmDialog, Dialog, ListingDialog } from '@/components/dialogs'
-import { compareMoney, money, subtractMoney } from '@/lib/format'
+import { compareMoney, lots, money, perUnit, stacks, subtractMoney } from '@/lib/format'
+import { CATEGORIES, categoryLabel, type Category } from '@/lib/categories'
 
 type Kind = 'offer' | 'request'
 type Sort = 'new' | 'asc' | 'desc'
+// quantity conta i lotti, lot_price è il prezzo di un lotto da lot_size pezzi.
 type Row = {
-  id: string; owner_id: string; quantity: number; unit_price: string; note: string | null
-  created_at: string; item_id: string; items: { name: string } | null; profiles: { username: string } | null
+  id: string; owner_id: string; quantity: number; lot_size: number; lot_price: string; note: string | null
+  status: 'open' | 'closed'; created_at: string; item_id: string
+  items: { name: string; stack_size: number; category: Category } | null; profiles: { username: string } | null
 }
 
 const SORTS: { value: Sort; label: string }[] = [
@@ -22,6 +25,21 @@ const SORTS: { value: Sort; label: string }[] = [
   { value: 'asc', label: 'Prezzo crescente' },
   { value: 'desc', label: 'Prezzo decrescente' },
 ]
+
+const CATEGORY_FILTER: { value: Category | 'all'; label: string }[] = [{ value: 'all', label: 'Tutte le categorie' }, ...CATEGORIES]
+
+function availability(r: Row, isReq: boolean): string {
+  if (r.lot_size === 1) return `${fmt(r.quantity)} ${isReq ? 'richiesti' : 'disponibili'}`
+  if (r.quantity === 1) return `1 lotto ${isReq ? 'richiesto' : 'disponibile'}`
+  return `${lots(r.quantity)} ${isReq ? 'richiesti' : 'disponibili'}`
+}
+
+// "128 Cookie (2 stack)": i pezzi da scambiare in gioco.
+function piecesText(r: Row, quantity: number): string {
+  const pieces = quantity * r.lot_size
+  const hint = stacks(pieces, r.items?.stack_size ?? 64)
+  return `${fmt(pieces)} ${r.items?.name ?? r.item_id}${hint ? ` (${hint})` : ''}`
+}
 
 // Elenco di annunci: serve sia per le Offerte (si compra) sia per le Richieste (si vende).
 export function Market({ kind }: { kind: Kind }) {
@@ -36,6 +54,7 @@ export function Market({ kind }: { kind: Kind }) {
   const [error, setError] = useState('')
   const [q, setQ] = useState('')
   const [sort, setSort] = useState<Sort>('new')
+  const [category, setCategory] = useState<Category | 'all'>('all')
   const [mine, setMine] = useState(false)
   const [selected, setSelected] = useState<Row | null>(null)
   const [creating, setCreating] = useState(false)
@@ -47,28 +66,31 @@ export function Market({ kind }: { kind: Kind }) {
   const load = useCallback(async () => {
     const { data, error } = await supabase
       .from('listings')
-      .select('id, owner_id, quantity, unit_price::text, note, created_at, item_id, items(name), profiles(username)')
+      .select('id, owner_id, quantity, lot_size, lot_price::text, note, status, created_at, item_id, items(name, stack_size, category), profiles(username)')
       .eq('kind', kind)
-      .eq('status', 'open')
+      // Anche i propri annunci esauriti, che si possono rifornire.
+      .or(me ? `status.eq.open,and(status.eq.closed,owner_id.eq.${me})` : 'status.eq.open')
     if (error) setError(error.message)
     else {
       setError('')
       setRows((data ?? []) as unknown as Row[])
     }
-  }, [kind])
+  }, [kind, me])
 
   useFocusEffect(useCallback(() => { load() }, [load]))
 
   const visible = useMemo(() => {
     const needle = q.trim().toLowerCase()
     const list = rows.filter((r) =>
-      (!mine || r.owner_id === me) &&
+      (mine ? r.owner_id === me : r.status === 'open') &&
+      (category === 'all' || r.items?.category === category) &&
       `${r.items?.name ?? r.item_id} ${r.profiles?.username ?? ''}`.toLowerCase().includes(needle))
+    // Il prezzo si confronta per pezzo (a/x contro b/y come a·y contro b·x, senza arrotondare); gli esauriti in fondo.
+    const byPrice = (a: Row, b: Row) => compareMoney(money(a.lot_price, b.lot_size), money(b.lot_price, a.lot_size))
     return list.sort((a, b) =>
-      sort === 'asc' ? compareMoney(a.unit_price, b.unit_price)
-      : sort === 'desc' ? compareMoney(b.unit_price, a.unit_price)
-      : b.created_at.localeCompare(a.created_at))
-  }, [rows, q, sort, mine, me])
+      Number(a.status === 'closed') - Number(b.status === 'closed')
+      || (sort === 'asc' ? byPrice(a, b) : sort === 'desc' ? byPrice(b, a) : b.created_at.localeCompare(a.created_at)))
+  }, [rows, q, sort, category, mine, me])
 
   async function withdraw() {
     if (!withdrawing) return
@@ -84,28 +106,43 @@ export function Market({ kind }: { kind: Kind }) {
 
   function card(r: Row) {
     const name = r.items?.name ?? r.item_id
+    const isLot = r.lot_size > 1
+    const sold = r.status === 'closed'
+    const unit = perUnit(r.lot_price, r.lot_size)
+    const hint = stacks(r.lot_size, r.items?.stack_size ?? 64)
     return (
       <Card style={[s.listing, wide && s.listingWide]}>
         <View style={s.listingDetails}>
           <View style={s.row}>
             <ItemIcon id={r.item_id} />
             <View style={{ flex: 1, minWidth: 0 }}>
-              <Txt variant="title">{name}</Txt>
-              <Txt variant="muted">{fmt(r.quantity)} {isReq ? 'richiesti' : 'disponibili'}</Txt>
+              <Txt variant="title">{isLot ? `${fmt(r.lot_size)} × ${name}` : name}</Txt>
+              <Txt variant="muted">{sold ? (isReq ? 'Richiesta completata' : 'Tutto venduto') : availability(r, isReq)}{hint ? ` · lotti da ${hint}` : ''}</Txt>
             </View>
           </View>
           <View style={{ marginTop: 8 }}>
-            <Amount variant="price" after="/ unità">{fmt(r.unit_price)}</Amount>
+            <Amount variant="price" after={isLot ? '/ lotto' : '/ unità'}>{fmt(r.lot_price)}</Amount>
+            {isLot && (
+              <Amount variant="muted" after="/ unità">
+                {compareMoney(money(unit, r.lot_size), r.lot_price) === 0 ? '' : '≈ '}{fmt(unit)}
+              </Amount>
+            )}
           </View>
           {!!r.note && <Txt variant="muted">Note: {r.note}</Txt>}
           <Txt variant="muted">{isReq ? 'richiesta di ' : 'di '}{r.profiles?.username ?? '?'} · {new Date(r.created_at).toLocaleString('it-IT', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</Txt>
-          {r.owner_id === me && <View style={{ marginTop: 8 }}><Badge text={isReq ? 'Tua richiesta' : 'Tua offerta'} /></View>}
+          <View style={[s.row, { marginTop: 8 }]}>
+            {!!r.items && <Badge text={categoryLabel(r.items.category)} tone="gray" />}
+            {r.owner_id === me && <Badge text={isReq ? 'Tua richiesta' : 'Tua offerta'} />}
+            {sold && <Badge text="Esaurita" tone="gray" />}
+          </View>
         </View>
         <View style={[s.listingActions, wide && s.listingActionsWide]}>
           {r.owner_id === me ? (
             <>
               <View style={wide ? s.actionButtonWide : s.actionButton}>
-                <Btn title="Modifica" variant="alt" full onPress={() => setEditing(r)} />
+                {sold
+                  ? <Btn title="Rifornisci" full onPress={() => setEditing(r)} />
+                  : <Btn title="Modifica" variant="alt" full onPress={() => setEditing(r)} />}
               </View>
               <View style={wide ? s.actionButtonWide : s.actionButton}>
                 <Btn title="Ritira" variant="danger" full onPress={() => { setWdErr(''); setWithdrawing(r) }} />
@@ -135,6 +172,7 @@ export function Market({ kind }: { kind: Kind }) {
         <View style={[s.row, { alignItems: 'flex-start' }]}>
           <TextInput value={q} onChangeText={setQ} placeholder="Cerca item o utente" placeholderTextColor={t.muted}
             style={[s.input, { flex: 1, minWidth: 200, borderColor: t.line, backgroundColor: t.panel, color: t.ink }]} />
+          <Select value={category} options={CATEGORY_FILTER} onChange={setCategory} width={260} />
           <Select value={sort} options={SORTS} onChange={setSort} />
         </View>
         {!!error && <Txt variant="error">{error}</Txt>}
@@ -152,7 +190,10 @@ export function Market({ kind }: { kind: Kind }) {
       )}
       {editing && (
         <ListingDialog kind={kind} onClose={() => setEditing(null)}
-          listing={{ id: editing.id, name: editing.items?.name ?? editing.item_id, quantity: editing.quantity, unit_price: editing.unit_price, note: editing.note }}
+          listing={{
+            id: editing.id, item_id: editing.item_id, name: editing.items?.name ?? editing.item_id, stack_size: editing.items?.stack_size ?? 64,
+            quantity: editing.quantity, lot_size: editing.lot_size, lot_price: editing.lot_price, note: editing.note,
+          }}
           onDone={(message) => { setEditing(null); toast(message); load() }} />
       )}
       {withdrawing && (
@@ -176,9 +217,10 @@ function OrderDialog({ row, isReq, onClose, onDone }: {
   const owner = row.profiles?.username ?? '?'
   const n = /^\d+$/.test(qty.trim()) ? Number(qty) : 0
   const validQty = Number.isSafeInteger(n) && n >= 1 && n <= row.quantity
-  const total = money(row.unit_price, validQty ? n : 0)
+  const isLot = row.lot_size > 1
+  const total = money(row.lot_price, validQty ? n : 0)
   let problem = ''
-  if (!validQty) problem = `Scegli una quantità intera tra 1 e ${fmt(row.quantity)}.`
+  if (!validQty) problem = isLot ? `Scegli un numero di lotti tra 1 e ${fmt(row.quantity)}.` : `Scegli una quantità intera tra 1 e ${fmt(row.quantity)}.`
   else if (!isReq && compareMoney(total, balance ?? '0') > 0) problem = 'Tosi insufficienti per questa quantità.'
 
   async function confirm() {
@@ -189,15 +231,15 @@ function OrderDialog({ row, isReq, onClose, onDone }: {
     if (error) return setErr(error.message)
     await refreshBalance()
     onDone(isReq
-      ? `Consegna ${n} ${name} a ${owner} in gioco. Quando conferma, ricevi ${fmt(total)} Tosi.`
-      : `${fmt(total)} Tosi bloccati. Ritira ${n} ${name} da ${owner} in gioco, poi premi Ricevuto.`)
+      ? `Consegna ${piecesText(row, n)} a ${owner} in gioco e premi Consegnato in Ordini. Quando conferma, ricevi ${fmt(total)} Tosi.`
+      : `${fmt(total)} Tosi bloccati. Quando ${owner} consegna in gioco riceverai un avviso: ritira gli item e premi Ricevuto.`)
   }
 
   return (
     <Dialog onClose={onClose}>
       <Txt variant="title">{isReq ? 'Vendi' : 'Compra'} {name}</Txt>
-      <Amount variant="muted" after={`/ unità · ${fmt(row.quantity)} ${isReq ? 'richiesti' : 'disponibili'}`}>
-        {isReq ? 'Richiesta di' : 'Venditore:'} {owner} · {fmt(row.unit_price)}
+      <Amount variant="muted" after={`${isLot ? `/ lotto da ${fmt(row.lot_size)}` : '/ unità'} · ${availability(row, isReq)}`}>
+        {isReq ? 'Richiesta di' : 'Venditore:'} {owner} · {fmt(row.lot_price)}
       </Amount>
       <View style={s.row}>
         <Btn title="−" variant="alt" onPress={() => setQty(String(Math.max(1, n - 1)))} />
@@ -206,6 +248,7 @@ function OrderDialog({ row, isReq, onClose, onDone }: {
         <Btn title="+" variant="alt" onPress={() => setQty(String(Math.min(row.quantity, n + 1)))} />
         <Btn title="Max" variant="alt" onPress={() => setQty(String(row.quantity))} />
       </View>
+      {isLot && validQty && <Txt>{lots(n)} = {piecesText(row, n)}</Txt>}
       <Amount variant="price">Totale: {fmt(total)}</Amount>
       {isReq
         ? <Amount variant="muted" after={`quando ${owner} conferma.`}>Riceverai {fmt(total)}</Amount>
