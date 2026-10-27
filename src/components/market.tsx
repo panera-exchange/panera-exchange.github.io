@@ -9,6 +9,7 @@ import { Amount, Badge, Btn, Card, Checkbox, ItemIcon, Select, Txt, fmt } from '
 import { TopNav, pageContent } from '@/components/shell'
 import { ConfirmDialog, Dialog, ListingDialog } from '@/components/dialogs'
 import { compareMoney, lots, money, perUnit, stacks, subtractMoney } from '@/lib/format'
+import { CATEGORIES, categoryLabel, type Category } from '@/lib/categories'
 
 type Kind = 'offer' | 'request'
 type Sort = 'new' | 'asc' | 'desc'
@@ -16,7 +17,7 @@ type Sort = 'new' | 'asc' | 'desc'
 type Row = {
   id: string; owner_id: string; quantity: number; lot_size: number; lot_price: string; note: string | null
   status: 'open' | 'closed'; created_at: string; item_id: string
-  items: { name: string; stack_size: number } | null; profiles: { username: string } | null
+  items: { name: string; stack_size: number; category: Category } | null; profiles: { username: string } | null
 }
 
 const SORTS: { value: Sort; label: string }[] = [
@@ -24,6 +25,8 @@ const SORTS: { value: Sort; label: string }[] = [
   { value: 'asc', label: 'Prezzo crescente' },
   { value: 'desc', label: 'Prezzo decrescente' },
 ]
+
+const CATEGORY_FILTER: { value: Category | 'all'; label: string }[] = [{ value: 'all', label: 'Tutte le categorie' }, ...CATEGORIES]
 
 function availability(r: Row, isReq: boolean): string {
   if (r.lot_size === 1) return `${fmt(r.quantity)} ${isReq ? 'richiesti' : 'disponibili'}`
@@ -51,6 +54,7 @@ export function Market({ kind }: { kind: Kind }) {
   const [error, setError] = useState('')
   const [q, setQ] = useState('')
   const [sort, setSort] = useState<Sort>('new')
+  const [category, setCategory] = useState<Category | 'all'>('all')
   const [mine, setMine] = useState(false)
   const [selected, setSelected] = useState<Row | null>(null)
   const [creating, setCreating] = useState(false)
@@ -62,7 +66,7 @@ export function Market({ kind }: { kind: Kind }) {
   const load = useCallback(async () => {
     const { data, error } = await supabase
       .from('listings')
-      .select('id, owner_id, quantity, lot_size, lot_price::text, note, status, created_at, item_id, items(name, stack_size), profiles(username)')
+      .select('id, owner_id, quantity, lot_size, lot_price::text, note, status, created_at, item_id, items(name, stack_size, category), profiles(username)')
       .eq('kind', kind)
       // Anche i propri annunci esauriti, che si possono rifornire.
       .or(me ? `status.eq.open,and(status.eq.closed,owner_id.eq.${me})` : 'status.eq.open')
@@ -79,13 +83,14 @@ export function Market({ kind }: { kind: Kind }) {
     const needle = q.trim().toLowerCase()
     const list = rows.filter((r) =>
       (mine ? r.owner_id === me : r.status === 'open') &&
+      (category === 'all' || r.items?.category === category) &&
       `${r.items?.name ?? r.item_id} ${r.profiles?.username ?? ''}`.toLowerCase().includes(needle))
     // Il prezzo si confronta per pezzo (a/x contro b/y come a·y contro b·x, senza arrotondare); gli esauriti in fondo.
     const byPrice = (a: Row, b: Row) => compareMoney(money(a.lot_price, b.lot_size), money(b.lot_price, a.lot_size))
     return list.sort((a, b) =>
       Number(a.status === 'closed') - Number(b.status === 'closed')
       || (sort === 'asc' ? byPrice(a, b) : sort === 'desc' ? byPrice(b, a) : b.created_at.localeCompare(a.created_at)))
-  }, [rows, q, sort, mine, me])
+  }, [rows, q, sort, category, mine, me])
 
   async function withdraw() {
     if (!withdrawing) return
@@ -125,12 +130,11 @@ export function Market({ kind }: { kind: Kind }) {
           </View>
           {!!r.note && <Txt variant="muted">Note: {r.note}</Txt>}
           <Txt variant="muted">{isReq ? 'richiesta di ' : 'di '}{r.profiles?.username ?? '?'} · {new Date(r.created_at).toLocaleString('it-IT', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</Txt>
-          {r.owner_id === me && (
-            <View style={[s.row, { marginTop: 8 }]}>
-              <Badge text={isReq ? 'Tua richiesta' : 'Tua offerta'} />
-              {sold && <Badge text="Esaurita" tone="gray" />}
-            </View>
-          )}
+          <View style={[s.row, { marginTop: 8 }]}>
+            {!!r.items && <Badge text={categoryLabel(r.items.category)} tone="gray" />}
+            {r.owner_id === me && <Badge text={isReq ? 'Tua richiesta' : 'Tua offerta'} />}
+            {sold && <Badge text="Esaurita" tone="gray" />}
+          </View>
         </View>
         <View style={[s.listingActions, wide && s.listingActionsWide]}>
           {r.owner_id === me ? (
@@ -168,6 +172,7 @@ export function Market({ kind }: { kind: Kind }) {
         <View style={[s.row, { alignItems: 'flex-start' }]}>
           <TextInput value={q} onChangeText={setQ} placeholder="Cerca item o utente" placeholderTextColor={t.muted}
             style={[s.input, { flex: 1, minWidth: 200, borderColor: t.line, backgroundColor: t.panel, color: t.ink }]} />
+          <Select value={category} options={CATEGORY_FILTER} onChange={setCategory} width={260} />
           <Select value={sort} options={SORTS} onChange={setSort} />
         </View>
         {!!error && <Txt variant="error">{error}</Txt>}
