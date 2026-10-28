@@ -56,6 +56,7 @@ export function Market({ kind }: { kind: Kind }) {
   const [sort, setSort] = useState<Sort>('new')
   const [category, setCategory] = useState<Category | 'all'>('all')
   const [mine, setMine] = useState(false)
+  const [notMine, setNotMine] = useState(false)
   const [selected, setSelected] = useState<Row | null>(null)
   const [creating, setCreating] = useState(false)
   const [editing, setEditing] = useState<Row | null>(null)
@@ -82,7 +83,7 @@ export function Market({ kind }: { kind: Kind }) {
   const visible = useMemo(() => {
     const needle = q.trim().toLowerCase()
     const list = rows.filter((r) =>
-      (mine ? r.owner_id === me : r.status === 'open') &&
+      (mine ? r.owner_id === me : r.status === 'open' && (!notMine || r.owner_id !== me)) &&
       (category === 'all' || r.items?.category === category) &&
       `${r.items?.name ?? r.item_id} ${r.profiles?.username ?? ''}`.toLowerCase().includes(needle))
     // Il prezzo si confronta per pezzo (a/x contro b/y come a·y contro b·x, senza arrotondare); gli esauriti in fondo.
@@ -90,7 +91,7 @@ export function Market({ kind }: { kind: Kind }) {
     return list.sort((a, b) =>
       Number(a.status === 'closed') - Number(b.status === 'closed')
       || (sort === 'asc' ? byPrice(a, b) : sort === 'desc' ? byPrice(b, a) : b.created_at.localeCompare(a.created_at)))
-  }, [rows, q, sort, category, mine, me])
+    }, [rows, q, sort, category, mine, notMine, me])
 
   async function withdraw() {
     if (!withdrawing) return
@@ -167,7 +168,8 @@ export function Market({ kind }: { kind: Kind }) {
         </Txt>
         <View style={[s.row, { gap: 12 }]}>
           <Btn title={isReq ? '+ Nuova richiesta' : '+ Nuova offerta'} onPress={() => setCreating(true)} />
-          <Checkbox label="Solo le mie" value={mine} onChange={setMine} />
+          <Checkbox label="Solo le mie" value={mine} onChange={(v) => { setMine(v); if (v) setNotMine(false) }} />
+          <Checkbox label="Eccetto le mie" value={notMine} onChange={(v) => { setNotMine(v); if (v) setMine(false) }} />
         </View>
         <View style={[s.row, { alignItems: 'flex-start' }]}>
           <TextInput value={q} onChangeText={setQ} placeholder="Cerca item o utente" placeholderTextColor={t.muted}
@@ -186,7 +188,7 @@ export function Market({ kind }: { kind: Kind }) {
       )}
       {creating && (
         <ListingDialog kind={kind} onClose={() => setCreating(false)}
-          onDone={(message) => { setCreating(false); setMine(true); toast(message); load() }} />
+          onDone={(message) => { setCreating(false); setMine(true); setNotMine(false); toast(message); load() }} />
       )}
       {editing && (
         <ListingDialog kind={kind} onClose={() => setEditing(null)}
