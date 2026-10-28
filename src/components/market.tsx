@@ -1,15 +1,17 @@
-import { useCallback, useMemo, useState } from 'react'
-import { ScrollView, StyleSheet, TextInput, View, useWindowDimensions } from 'react-native'
-import { useFocusEffect } from 'expo-router'
-import { supabase } from '@/lib/supabase'
+import { ConfirmDialog, Dialog, ListingDialog } from '@/components/dialogs'
+import { useLightning } from '@/components/lightning'
+import { TopNav, pageContent } from '@/components/shell'
+import { Amount, Badge, Btn, Card, Checkbox, ItemIcon, Select, Txt, fmt } from '@/components/ui'
+import { CATEGORIES, categoryLabel, type Category } from '@/lib/categories'
+import { compareMoney, lots, money, perUnit, stacks, subtractMoney } from '@/lib/format'
+import { reachedOfferMilestone } from '@/lib/offer-milestone'
 import { useSession } from '@/lib/session'
+import { supabase } from '@/lib/supabase'
 import { useToast } from '@/lib/toast'
 import { fonts, useTheme } from '@/theme'
-import { Amount, Badge, Btn, Card, Checkbox, ItemIcon, Select, Txt, fmt } from '@/components/ui'
-import { TopNav, pageContent } from '@/components/shell'
-import { ConfirmDialog, Dialog, ListingDialog } from '@/components/dialogs'
-import { compareMoney, lots, money, perUnit, stacks, subtractMoney } from '@/lib/format'
-import { CATEGORIES, categoryLabel, type Category } from '@/lib/categories'
+import { useFocusEffect } from 'expo-router'
+import { useCallback, useMemo, useState } from 'react'
+import { ScrollView, StyleSheet, TextInput, View, useWindowDimensions } from 'react-native'
 
 type Kind = 'offer' | 'request'
 type Sort = 'new' | 'asc' | 'desc'
@@ -63,6 +65,7 @@ export function Market({ kind }: { kind: Kind }) {
   const [withdrawing, setWithdrawing] = useState<Row | null>(null)
   const [wdBusy, setWdBusy] = useState(false)
   const [wdErr, setWdErr] = useState('')
+  const strike = useLightning()
 
   const load = useCallback(async () => {
     const { data, error } = await supabase
@@ -188,7 +191,10 @@ export function Market({ kind }: { kind: Kind }) {
       )}
       {creating && (
         <ListingDialog kind={kind} onClose={() => setCreating(false)}
-          onDone={(message) => { setCreating(false); setMine(true); setNotMine(false); toast(message); load() }} />
+          onDone={async (message) => {
+            setCreating(false); setMine(true); setNotMine(false); toast(message); load()
+            if (kind === 'offer' && me && await reachedOfferMilestone(me)) strike()
+          }} />
       )}
       {editing && (
         <ListingDialog kind={kind} onClose={() => setEditing(null)}
