@@ -35,6 +35,79 @@ const ARTICLES = [
   },
 ]
 
+// Consigli d'uso: funzioni utili che non tutti conoscono.
+const CONSIGLI = [
+  {
+    title: 'Rifornire gli annunci esauriti',
+    body: "Un'offerta o una richiesta esaurita non sparisce: resta visibile al proprietario, in fondo alla lista, con l'etichetta “Esaurita”. Con “Rifornisci” la si riapre con nuove quantità o un nuovo prezzo, senza doverla ricreare da zero.",
+  },
+  {
+    title: 'Modificare o ritirare un annuncio',
+    body: "Prezzo, quantità e note di un annuncio si possono cambiare in qualsiasi momento con “Modifica”, e l'annuncio si toglie dalla bacheca con “Ritira”. Gli ordini già in corso su quell'annuncio restano validi.",
+  },
+  {
+    title: 'Cercare, filtrare e ordinare',
+    body: "La barra di ricerca accetta sia il nome di un item sia quello di un utente. Il menu delle categorie restringe la lista, e quello dell'ordinamento dispone gli annunci per data o per prezzo. Il prezzo è confrontato per singolo pezzo, quindi lotti e vendite a unità si confrontano in modo corretto.",
+  },
+  {
+    title: 'Solo le mie / Eccetto le mie',
+    body: "L'opzione “Solo le mie” mostra soltanto i propri annunci, compresi quelli esauriti. “Eccetto le mie” li nasconde e lascia solo quelli degli altri utenti.",
+  },
+  {
+    title: 'Nomi degli item in inglese',
+    body: "Il catalogo usa i nomi ufficiali in inglese di Minecraft: si cerca “Obsidian”, non “Ossidiana”. Bastano poche lettere per ottenere i risultati.",
+  },
+  {
+    title: 'Vendita a lotti',
+    body: "Il campo “Pezzi per lotto” stabilisce quanti pezzi formano un lotto: si possono usare le scorciatoie Stack e Chest oppure scrivere un numero. Chi compra sceglie quanti lotti prendere. Il riepilogo in fondo al modulo indica il totale dei pezzi e il prezzo per unità.",
+  },
+  {
+    title: 'Il campo Note',
+    body: "Le note servono per i dettagli che il nome non riporta, come gli incantesimi (es. “Efficiency V”) o lo stato di un oggetto.",
+  },
+  {
+    title: 'Item introvabili: le richieste',
+    body: "Se nessuno vende l'item cercato, conviene pubblicare una richiesta nella scheda Richieste, indicando il prezzo che si è disposti a pagare: chi possiede l'item potrà venderlo direttamente con “Vendi”.",
+  },
+  {
+    title: 'Il tasto Max',
+    body: "Nella finestra di acquisto o di vendita, il tasto “Max” imposta subito tutta la quantità disponibile dell'annuncio.",
+  },
+  {
+    title: 'Il numero rosso su Ordini',
+    body: "Il numero rosso sulla scheda Ordini indica quanti ordini attendono un'azione: una consegna per chi vende, un ritiro per chi compra. Nella sezione “Da fare” questi ordini compaiono sempre in cima.",
+  },
+  {
+    title: 'Ricevuto solo dopo il ritiro',
+    body: "Chi vende consegna in gioco e preme “Consegnato”, poi chi compra ritira gli item e preme “Ricevuto”. Ricevuto va premuto solo quando gli item sono stati effettivamente ritirati: a quel punto i Tosi passano al venditore e l'operazione non si può annullare.",
+  },
+  {
+    title: 'Annullamento degli ordini',
+    body: "Prima della consegna l'ordine può essere annullato sia da chi compra sia da chi vende, e i Tosi tornano al compratore. Una volta segnata la consegna, può annullare soltanto chi vende.",
+  },
+  {
+    title: 'Tosi bloccati',
+    body: "Al momento dell'acquisto i Tosi restano bloccati finché l'ordine non si chiude. La scheda Movimenti riporta sia il saldo disponibile sia l'importo bloccato negli acquisti aperti.",
+  },
+  {
+    title: 'Controllare i prezzi prima di vendere',
+    body: "La scheda Andamento riporta, per ogni item già scambiato, l'ultimo prezzo e la media pesata, insieme al prezzo di vendita più basso e alla richiesta più alta del momento. Il “?” accanto a ogni voce ne spiega il significato.",
+  },
+  {
+    title: 'Le occasioni',
+    body: "In Andamento, l'etichetta verde “Occasione” compare quando un'offerta di vendita ha un prezzo pari o inferiore a quello di una richiesta: è il momento più favorevole per comprare o vendere.",
+  },
+  {
+    title: 'Lo storico del mercato',
+    body: "Movimenti elenca tutti gli scambi conclusi sul mercato, e l'opzione “Solo i miei” li limita ai propri. Le righe blu sono voci del proprio conto, come i Tosi assegnati dagli admin o i ricalcoli dovuti a un cambio del tasso.",
+  },
+  {
+    title: 'Cambio del tasso BCP',
+    body: "Quando la BCP modifica il tasso diamante–Tosi, saldi e prezzi degli annunci vengono ricalcolati automaticamente, così da mantenere lo stesso valore in diamanti.",
+  },
+]
+
+
 // Regolamento del mercato: intestazione col sigillo BCP, articoli numerati e avvertenza finale.
 export default function Regole() {
   const t = useTheme()
@@ -72,7 +145,23 @@ export default function Regole() {
             </View>
           </Card>
         ))}
+        {/* Consigli: titolo col diamante, poi una scheda per ogni consiglio */}
+        <View style={[s.heading, { marginTop: 16 }]}>
+          <View style={s.row}>
+            <Image source={require('@/assets/images/diamond.png')} style={s.book} contentFit="contain" />
+            <Txt variant="title" style={s.title}>Consigli per usare PanEx</Txt>
+          </View>
+          <Txt variant="muted" style={{ textAlign: 'center' }}>
+            Funzioni utili e trucchi che non tutti conoscono.
+          </Txt>
+        </View>
 
+        {CONSIGLI.map((c) => (
+          <Card key={c.title} style={[s.tip, { borderLeftColor: t.gold }]}>
+            <Txt variant="title" style={{ color: t.coin }}>{c.title.toUpperCase()}</Txt>
+            <Txt>{c.body}</Txt>
+          </Card>
+        ))}
         <Card style={{ borderColor: t.red }}>
           <Txt variant="muted" style={{ textAlign: 'center' }}>
             Il mancato rispetto del presente regolamento può comportare la rimozione degli annunci o il ban dal
@@ -100,4 +189,5 @@ const s = StyleSheet.create({
   article: { flexDirection: 'row', gap: 12, borderLeftWidth: 8 },
   number: { width: 52, alignItems: 'center', borderRightWidth: 3, paddingRight: 10 },
   numberText: { fontFamily: fonts.title, fontSize: 18, lineHeight: 28 },
+  tip: { gap: 6, borderLeftWidth: 8 },
 })
