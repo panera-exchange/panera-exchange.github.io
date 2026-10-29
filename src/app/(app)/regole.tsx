@@ -1,8 +1,10 @@
-import { ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Linking, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
 import { fonts, useTheme } from '@/theme'
-import { Card, Txt } from '@/components/ui'
+import { Btn, Card, Txt } from '@/components/ui'
 import { TopNav, pageContent } from '@/components/shell'
+
+const PROTOCOLLO_URL = 'https://panera-exchange.github.io/protocollo_BCP.pdf'
 
 // Testo provvisorio, ripreso dal regolamento di PanEx 1.0: alcuni articoli (es. 02 e 03) vanno ancora rivisti.
 const ARTICLES = [
@@ -11,20 +13,17 @@ const ARTICLES = [
     body: 'Gli utenti devono usare il proprio username Minecraft reale, riconoscibile dagli altri giocatori del server. Non sono ammessi nickname falsi o anonimi.',
   },
   {
-    title: 'Nomi ufficiali degli oggetti',
-    body: 'Il nome degli oggetti messi in vendita deve corrispondere al nome ufficiale del gioco — quello che appare quando ci si passa sopra con il cursore in Minecraft. Preferibilmente in INGLESE (es. "Diamond Sword" anziché "Spada di diamante").',
+    title: 'Nomi speciali degli oggetti',
+    body: 'I nomi degli oggetti messi in vendita corrisondono ai nomi ufficiali trovati in gioco. Nel caso il nome non soddisfi la creativitá dell\'utente, il riquadro note serve per specificare se siano presenti enchantment o se l\'oggetto da vendere sia personalizzato.',
   },
-  {
-    title: 'Quantità nell\'apposito campo',
-    body: 'La quantità degli oggetti va inserita esclusivamente nel campo "Quantità" del modulo di vendita. Non va scritta nel nome dell\'oggetto (es. scrivi "Diamond" non "64x Diamond").',
-  },
+  
   {
     title: 'Valuta ufficiale e tasso di cambio',
     body: 'Tutti i prezzi devono essere espressi in Tosi, al tasso di cambio diamante–tosi stabilito e pubblicato dalla Banca Centrale di Panera (BCP). Non sono ammesse valutazioni parallele, baratti diretti in diamanti o prezzi che ignorino il tasso ufficiale in vigore.',
   },
   {
     title: 'Consegne',
-    body: 'Alla conferma dell\'acquisto, i Tosi del compratore non vengono trasferiti immediatamente al venditore, ma trattenuti dal sistema in un conto di deposito a garanzia (escrow). L\'importo è rilasciato al venditore solo dopo che la consegna fisica dell\'oggetto è stata segnata come completata nell\'apposito pannello. La consegna fisica deve avvenire presso l\'UNIVERMAG di Brasimogne Est, nella sala al primo piano, nella cassa appartenente al compratore. Le consegne vanno completate NEL MINOR TEMPO POSSIBILE.',
+    body: 'All\'acquisto di un oggetto i soldi del compratore vengono prelevati istantaneamente. Il venditore è notificato dell\'ordine e deve consegnare l\'oggetto presso la cassa dell\'acquirente situata al primo piano dell\'UNIVERMAG di Brasimogne Est. Successivamente segnala l\'avvenuta consegna tramite la schermata "Ordini", l\'acquirente allora dovrá confermare l\'avvenuta consegna tramite la medesima pagina e il pagamento sará depositato sul conto del venditore. Per un economia funzionale si prega di completare questi passi nella maniera più celere possibile.',
   },
   {
     title: 'Depositi e prelievi di diamanti',
@@ -58,6 +57,7 @@ export default function Regole() {
             In conformità al Protocollo sullo Statuto della Banca Centrale di Panera. Il mercato opera sotto la
             supervisione della BCP per quanto attiene alla valuta e al tasso di cambio.
           </Txt>
+          <Btn title="Protocollo BCP (PDF)" onPress={() => Linking.openURL(PROTOCOLLO_URL)} />
         </View>
 
         {ARTICLES.map((a, i) => (

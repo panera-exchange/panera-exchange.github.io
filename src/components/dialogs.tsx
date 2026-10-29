@@ -99,7 +99,7 @@ export type EditableListing = {
   quantity: number; lot_size: number; lot_price: string; note: string | null
 }
 
-const MAX_LOT = 1728 // una shulker piena di stack da 64
+const MAX_LOT = 1728 // una chest piena di stack da 64
 const MAX_PIECES = 1000000
 const wholeNumber = (text: string) => /^\d+$/.test(text.trim()) ? Number(text) : NaN
 
@@ -132,7 +132,7 @@ export function ListingDialog({ kind, listing, onClose, onDone }: {
   const validPrice = !!parsedPrice && compareMoney(parsedPrice.value, '0.00001') >= 0 && !exceedsTosiLimit(price, 100000000n)
   const presets = stackSize === null ? [] : [
     ...(stackSize > 1 ? [{ label: `Stack (${stackSize})`, value: stackSize }] : []),
-    { label: `Shulker (${fmt(stackSize * 27)})`, value: stackSize * 27 },
+    { label: `Chest (${fmt(stackSize * 27)})`, value: stackSize * 27 },
   ]
 
   // La dimensione dello stack serve per le scorciatoie: si legge quando si sceglie l'item.
