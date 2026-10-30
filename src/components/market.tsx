@@ -1,17 +1,17 @@
-import { ConfirmDialog, Dialog, ListingDialog } from '@/components/dialogs'
-import { useLightning } from '@/components/lightning'
-import { TopNav, pageContent } from '@/components/shell'
-import { Amount, Badge, Btn, Card, Checkbox, ItemIcon, Select, Txt, fmt } from '@/components/ui'
-import { CATEGORIES, categoryLabel, type Category } from '@/lib/categories'
-import { compareMoney, lots, money, perUnit, stacks, subtractMoney } from '@/lib/format'
-import { reachedOfferMilestone } from '@/lib/offer-milestone'
-import { useSession } from '@/lib/session'
-import { supabase } from '@/lib/supabase'
-import { useToast } from '@/lib/toast'
-import { fonts, useTheme } from '@/theme'
-import { useFocusEffect } from 'expo-router'
 import { useCallback, useMemo, useState } from 'react'
 import { ScrollView, StyleSheet, TextInput, View, useWindowDimensions } from 'react-native'
+import { useFocusEffect } from 'expo-router'
+import { supabase } from '@/lib/supabase'
+import { useSession } from '@/lib/session'
+import { useToast } from '@/lib/toast'
+import { fonts, useTheme } from '@/theme'
+import { Amount, Badge, Btn, Card, Checkbox, ItemIcon, Select, Txt, fmt } from '@/components/ui'
+import { TopNav, pageContent } from '@/components/shell'
+import { ConfirmDialog, Dialog, ListingDialog } from '@/components/dialogs'
+import { useLightning } from '@/components/lightning'
+import { compareMoney, lots, money, perUnit, stacks, subtractMoney } from '@/lib/format'
+import { CATEGORIES, categoryLabel, type Category } from '@/lib/categories'
+import { reachedOfferMilestone } from '@/lib/offer-milestone'
 
 type Kind = 'offer' | 'request'
 type Sort = 'new' | 'asc' | 'desc'
@@ -94,7 +94,7 @@ export function Market({ kind }: { kind: Kind }) {
     return list.sort((a, b) =>
       Number(a.status === 'closed') - Number(b.status === 'closed')
       || (sort === 'asc' ? byPrice(a, b) : sort === 'desc' ? byPrice(b, a) : b.created_at.localeCompare(a.created_at)))
-    }, [rows, q, sort, category, mine, notMine, me])
+  }, [rows, q, sort, category, mine, notMine, me])
 
   async function withdraw() {
     if (!withdrawing) return
