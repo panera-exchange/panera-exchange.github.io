@@ -14,16 +14,15 @@ const ARTICLES = [
   },
   {
     title: 'Nomi speciali degli oggetti',
-    body: 'I nomi degli oggetti messi in vendita corrisondono ai nomi ufficiali trovati in gioco. Nel caso il nome non soddisfi la creativitá dell\'utente, il riquadro note serve per specificare se siano presenti enchantment o se l\'oggetto da vendere sia personalizzato.',
+    body: 'I nomi degli oggetti messi in vendita corrispondono ai nomi ufficiali trovati in gioco. Nel caso il nome non soddisfi la creatività dell\'utente, il campo "Note" serve per specificare se siano presenti enchantment o se l\'oggetto da vendere sia personalizzato.',
   },
-  
   {
     title: 'Valuta ufficiale e tasso di cambio',
     body: 'Tutti i prezzi devono essere espressi in Tosi, al tasso di cambio diamante–tosi stabilito e pubblicato dalla Banca Centrale di Panera (BCP). Non sono ammesse valutazioni parallele, baratti diretti in diamanti o prezzi che ignorino il tasso ufficiale in vigore.',
   },
   {
     title: 'Consegne',
-    body: 'All\'acquisto di un oggetto i soldi del compratore vengono prelevati istantaneamente. Il venditore è notificato dell\'ordine e deve consegnare l\'oggetto presso la cassa dell\'acquirente situata al primo piano dell\'UNIVERMAG di Brasimogne Est. Successivamente segnala l\'avvenuta consegna tramite la schermata "Ordini", l\'acquirente allora dovrá confermare l\'avvenuta consegna tramite la medesima pagina e il pagamento sará depositato sul conto del venditore. Per un economia funzionale si prega di completare questi passi nella maniera più celere possibile.',
+    body: 'All\'acquisto di un oggetto i soldi del compratore vengono prelevati istantaneamente. Il venditore è notificato dell\'ordine e deve consegnare l\'oggetto presso la cassa dell\'acquirente situata al primo piano dell\'UNIVERMAG di Brasimogne Est. Successivamente il venditore segnala l\'avvenuta consegna nella schermata "Ordini". A quel punto l\'acquirente dovrà confermare la consegna dalla stessa schermata e il pagamento sarà depositato sul conto del venditore. Per un\'economia funzionale si prega di completare questi passi nella maniera più celere possibile.',
   },
   {
     title: 'Depositi e prelievi di diamanti',
@@ -106,7 +105,6 @@ const CONSIGLI = [
     body: "Quando la BCP modifica il tasso diamante–Tosi, saldi e prezzi degli annunci vengono ricalcolati automaticamente, così da mantenere lo stesso valore in diamanti.",
   },
 ]
-
 
 // Regolamento del mercato: intestazione col sigillo BCP, articoli numerati e avvertenza finale.
 export default function Regole() {
