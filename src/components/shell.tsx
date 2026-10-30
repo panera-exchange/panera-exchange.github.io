@@ -1,7 +1,9 @@
-import { Text, View, useWindowDimensions } from 'react-native'
+import { useEffect } from 'react'
+import { StyleSheet, Text, View, useWindowDimensions, type ViewStyle } from 'react-native'
 import { Image } from 'expo-image'
 import { usePathname, useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import Animated, { Easing, cancelAnimation, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 import { supabase } from '@/lib/supabase'
 import { useSession } from '@/lib/session'
 import { useOrderAlerts } from '@/lib/order-alerts'
@@ -44,7 +46,9 @@ export function AppHeader() {
     </>
   )
   return (
-    <View style={{ backgroundColor: '#3a3a3a', borderBottomWidth: 4, borderBottomColor: '#000', paddingTop: insets.top }}>
+    <View style={{ backgroundColor: '#3a3a3a', borderBottomWidth: 4, borderBottomColor: '#000', paddingTop: insets.top, overflow: 'hidden' }}>
+      <HeaderBackground />
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0, 0, 0, 0.35)' }]} />
       <View style={{ width: '100%', maxWidth: 980, alignSelf: 'center', flexDirection: 'row', alignItems: narrow ? 'flex-start' : 'center',
         justifyContent: 'space-between', flexWrap: narrow ? 'nowrap' : 'wrap', gap: 10, paddingHorizontal: 12, paddingVertical: 6 }}>
         {/* Su telefono le regole vanno sotto il logo, perché a destra lo spazio è già pieno. */}
@@ -88,6 +92,49 @@ const TABS = [
   { href: '/movimenti', label: 'Movimenti', dark: '#6a3517', light: '#c0662b', main: false },
   { href: '/andamento', label: 'Andamento', dark: '#43275f', light: '#8150b8', main: false },
 ] as const
+
+// header background
+const PAN_X = 500        // pixel di spostamento massimo a destra e sinistra
+const PAN_Y = 1000        // pixel di spostamento massimo in su e in giù
+const ZOOM = 1.2        // ingrandimento dell'immagine
+const MIN_TIME = 9000   // durata minima di ogni movimento, in millisecondi
+const MAX_TIME = 30000  // durata massima
+const START_X = 0  // punto di partenza orizzontale, tra -PAN_X e PAN_X
+const START_Y = -500  // punto di partenza verticale, tra -PAN_Y e PAN_Y
+
+// Fa disegnare l'immagine su un livello a parte: il movimento lento resta fluido, senza scatti di un pixel.
+const smooth = { willChange: 'transform' } as ViewStyle
+
+// Sfondo dell'intestazione: immagine ingrandita che vaga piano in direzioni casuali, come il menu di Minecraft.
+function HeaderBackground() {
+  const x = useSharedValue(START_X)
+  const y = useSharedValue(START_Y)
+
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>
+    let side = 1
+    function next() {
+      const duration = MIN_TIME + Math.random() * (MAX_TIME - MIN_TIME)
+      const easing = Easing.inOut(Easing.sin)
+      side = -side // ogni volta dall'altra parte, così si vede sempre il movimento
+      x.set(withTiming(side * (0.4 + Math.random() * 0.6) * PAN_X, { duration, easing }))
+      y.set(withTiming((Math.random() * 2 - 1) * PAN_Y, { duration, easing }))
+      timer = setTimeout(next, duration)
+    }
+    next()
+    return () => { clearTimeout(timer); cancelAnimation(x); cancelAnimation(y) }
+  }, [x, y])
+
+  const moving = useAnimatedStyle(() => ({
+    transform: [{ translateX: x.get() }, { translateY: y.get() }, { scale: ZOOM }],
+  }))
+
+  return (
+    <Animated.View style={[StyleSheet.absoluteFill, { left: -PAN_X, right: -PAN_X, top: -PAN_Y, bottom: -PAN_Y }, smooth, moving]}>
+      <Image source={require('@/assets/images/header.webp')} style={StyleSheet.absoluteFill} contentFit="cover" />
+    </Animated.View>
+  )
+}
 
 // Navigazione: in alto su schermi larghi, in basso su telefono.
 export function Nav({ bottom }: { bottom?: boolean }) {
