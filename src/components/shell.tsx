@@ -131,7 +131,7 @@ function HeaderBackground() {
 
   return (
     <Animated.View style={[StyleSheet.absoluteFill, { left: -PAN_X, right: -PAN_X, top: -PAN_Y, bottom: -PAN_Y }, smooth, moving]}>
-      <Image source={require('@/assets/images/header.png')} style={StyleSheet.absoluteFill} contentFit="cover" />
+      <Image source={require('@/assets/images/header.webp')} style={StyleSheet.absoluteFill} contentFit="cover" />
     </Animated.View>
   )
 }
