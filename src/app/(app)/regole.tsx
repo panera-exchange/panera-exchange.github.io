@@ -4,7 +4,7 @@ import { fonts, useTheme } from '@/theme'
 import { Btn, Card, Txt } from '@/components/ui'
 import { TopNav, pageContent } from '@/components/shell'
 
-const PROTOCOLLO_URL = 'https://panera-exchange.github.io/protocollo_BCP.pdf'
+const PROTOCOLLO_URL = 'https://panera-exchange.github.io/Protocollo_BCP.pdf'
 
 // Testo provvisorio, ripreso dal regolamento di PanEx 1.0: alcuni articoli (es. 02 e 03) vanno ancora rivisti.
 const ARTICLES = [
