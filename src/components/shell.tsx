@@ -32,7 +32,28 @@ function RulesButton() {
   )
 }
 
-// Intestazione: logo, regole, utente, saldo e pulsante Esci.
+// Pulsante della Banca, solo per gli admin: color oro, acceso quando la pagina è aperta.
+function BankButton() {
+  const path = usePathname()
+  const router = useRouter()
+  const active = path === '/banca'
+  return (
+    <Btn title="Banca" variant="nav" color={active ? '#c9971c' : '#5c4309'} active={active}
+      onPress={() => router.navigate('/banca')} />
+  )
+}
+
+function HeaderLinks() {
+  const { isAdmin } = useSession()
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+      <RulesButton />
+      {isAdmin && <BankButton />}
+    </View>
+  )
+}
+
+// Intestazione: logo, regole (e banca per gli admin), utente, saldo e pulsante Esci.
 export function AppHeader() {
   const { username } = useSession()
   const insets = useSafeAreaInsets()
@@ -65,12 +86,12 @@ export function AppHeader() {
               <Text style={{ fontFamily: fonts.body, fontSize: 18, color: '#c8c8c8', marginTop: 2 }}>Panera Exchange</Text>
             </View>
           </View>
-          {narrow && <RulesButton />}
+          {narrow && <HeaderLinks />}
         </View>
         {/* Su telefono: saldo ed Esci, poi il nome, poi chi è online, tutto allineato a destra. */}
         <View style={{ alignItems: 'flex-end', gap: 4, flexShrink: 1 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-            {!narrow && <RulesButton />}
+            {!narrow && <HeaderLinks />}
             {!narrow && name}
             {balanceAndExit}
           </View>

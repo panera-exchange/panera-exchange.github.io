@@ -13,8 +13,11 @@ type Trade = {
   id: string; item_id: string; item_name: string; quantity: number; lot_size: number; lot_price: string
   buyer_id: string; buyer: string | null; seller_id: string; seller: string | null; closed_at: string
 }
-// Voce del proprio conto non legata a uno scambio (es. Tosi assegnati dall'admin): la vede solo il titolare.
-type Entry = { id: number; amount: string; kind: string; memo: string | null; created_at: string }
+// Voce del proprio conto non legata a uno scambio (es. un deposito) o rimborso di un ordine annullato: la vede solo il titolare.
+type Entry = {
+  id: number; amount: string; kind: string; memo: string | null; created_at: string
+  orders: { quantity: number; lot_size: number; item_id: string; items: { name: string } | null } | null
+}
 // Ordine in attesa ricalcolato a un cambio del tasso: solo informativo, il saldo non cambia.
 type Rescale = {
   id: number; old_lot_price: string; new_lot_price: string; created_at: string
@@ -29,6 +32,14 @@ const ACCOUNT = { bg: 'rgba(58, 108, 192, 0.18)', bar: '#3a6cc0' }
 function describe(e: Entry): [string, string] {
   switch (e.kind) {
     case 'grant': return ['Tosi ricevuti', e.memo ?? "Assegnati dall'amministratore"]
+    case 'deposit': return ['Deposito di diamanti', e.memo ?? 'Diamanti depositati in banca']
+    case 'withdraw': return ['Prelievo di diamanti', e.memo ?? 'Diamanti ritirati dalla banca']
+    case 'adjust': return ["Rettifica dell'amministratore", e.memo ?? 'Tosi senza diamanti']
+    case 'refund': {
+      const o = e.orders
+      const what = o ? `${fmt(o.quantity * o.lot_size)} ${o.items?.name ?? o.item_id} · ` : ''
+      return ['Ordine annullato', `${what}${e.memo ?? 'Tosi restituiti'}`]
+    }
     case 'rescale': return ['Cambio del tasso BCP', e.memo ?? 'Saldo ricalcolato al nuovo tasso']
     default: return ['Movimento del conto', e.memo ?? e.kind]
   }
@@ -55,7 +66,9 @@ export default function Movimenti() {
     refreshBalance()
     const [tr, ledger, pending, resc] = await Promise.all([
       fetchTrades(),
-      supabase.from('ledger').select('id, amount::text, kind, memo, created_at').is('order_id', null)
+      // Voci senza ordine e rimborsi degli ordini annullati; blocchi e pagamenti sono già negli scambi e in "Bloccati".
+      supabase.from('ledger').select('id, amount::text, kind, memo, created_at, orders(quantity, lot_size, item_id, items(name))')
+        .or('order_id.is.null,kind.eq.refund')
         .order('created_at', { ascending: false }).limit(100),
       // Tosi bloccati: ordini in attesa in cui sono il compratore.
       supabase.from('orders').select('quantity, lot_price::text').eq('status', 'pending').eq('buyer_id', me ?? ''),
@@ -69,7 +82,7 @@ export default function Movimenti() {
     const page = (tr.data ?? []) as Trade[]
     setTrades(page)
     setHasMore(page.length === PAGE)
-    setEntries((ledger.data ?? []) as Entry[])
+    setEntries((ledger.data ?? []) as unknown as Entry[])
     setRescales((resc.data ?? []) as unknown as Rescale[])
     setBlocked(sumMoney((pending.data ?? []).map((o) => money(o.lot_price, o.quantity))))
   }, [fetchTrades, refreshBalance, me])

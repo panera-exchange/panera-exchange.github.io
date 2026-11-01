@@ -52,13 +52,14 @@ export function ArticleDialog({ article, onClose, onDone }: {
 }
 
 // Esito di reserve_check(): importi in Tosi come testo, differenza > 0 se ci sono Tosi non coperti da diamanti.
+// adjustments: somma nominale delle rettifiche, cioè Tosi creati o tolti senza diamanti.
 export type ReserveCheck = {
   rate: string; reserve: string; balances: string; held: string; circulating: string; expected: string
-  difference: string; difference_diamonds: string; tolerance: string; ok: boolean
+  difference: string; difference_diamonds: string; adjustments: string; tolerance: string; ok: boolean
 }
 
-// Verifica della riserva (solo admin): Tosi in circolazione contro tasso × diamanti in riserva.
-export function ReserveCheckDialog({ check, onClose }: { check: ReserveCheck; onClose: () => void }) {
+// Cifre e verdetto della verifica della riserva: Tosi in circolazione contro tasso × diamanti in riserva.
+export function ReserveSummary({ check }: { check: ReserveCheck }) {
   const t = useTheme()
   const sign = compareMoney(check.difference, '0')
   const verdict = check.ok
@@ -71,8 +72,7 @@ export function ReserveCheckDialog({ check, onClose }: { check: ReserveCheck; on
     { label: `Attesi (${fmt(check.rate)} × ${fmt(check.reserve)} diamanti)`, value: check.expected },
   ]
   return (
-    <Dialog onClose={onClose} scrollable>
-      <Txt variant="title">Verifica della riserva</Txt>
+    <View style={{ gap: 8 }}>
       {rows.map((r) => (
         <View key={r.label}>
           <Txt variant="muted">{r.label}</Txt>
@@ -84,7 +84,22 @@ export function ReserveCheckDialog({ check, onClose }: { check: ReserveCheck; on
         {sign !== 0 && (
           <Amount after={`≈ ${fmt(check.difference_diamonds)} diamanti`}>Differenza: {sign > 0 ? '+' : ''}{fmt(check.difference)}</Amount>
         )}
+        {compareMoney(check.adjustments, '0') !== 0 && (
+          <Amount variant="muted" after="senza diamanti, per scelta">
+            Di cui rettifiche: {compareMoney(check.adjustments, '0') > 0 ? '+' : ''}{fmt(check.adjustments)}
+          </Amount>
+        )}
       </View>
+    </View>
+  )
+}
+
+// Verifica della riserva in un dialogo: si apre da sola dopo ogni modifica dei dati BCP.
+export function ReserveCheckDialog({ check, onClose }: { check: ReserveCheck; onClose: () => void }) {
+  return (
+    <Dialog onClose={onClose} scrollable>
+      <Txt variant="title">Verifica della riserva</Txt>
+      <ReserveSummary check={check} />
       <View style={[s.row, { justifyContent: 'flex-end' }]}>
         <Btn title="Chiudi" variant="alt" onPress={onClose} />
       </View>
@@ -92,14 +107,14 @@ export function ReserveCheckDialog({ check, onClose }: { check: ReserveCheck; on
   )
 }
 
-// Modifica dei dati della Banca Centrale Panera (solo admin).
+// Modifica del tasso della Banca Centrale Panera (solo admin). La riserva non si scrive a mano:
+// la cambiano solo depositi e prelievi nella Banca, insieme ai Tosi.
 // update_bcp restituisce l'esito della verifica della riserva, che si mostra subito dopo.
-export function BcpDialog({ rate, reserve, onClose, onDone }: {
-  rate: string; reserve: number; onClose: () => void; onDone: (message: string, check: ReserveCheck) => void
+export function BcpDialog({ rate, onClose, onDone }: {
+  rate: string; onClose: () => void; onDone: (message: string, check: ReserveCheck) => void
 }) {
   const t = useTheme()
   const [r, setR] = useState(money(rate))
-  const [v, setV] = useState(String(reserve))
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
   const input = [s.input, { borderColor: t.line, backgroundColor: t.panel, color: t.ink }]
@@ -110,28 +125,24 @@ export function BcpDialog({ rate, reserve, onClose, onDone }: {
   const ratio = rescale ? (Number(parsedRate.value) / Number(rate)).toLocaleString('it-IT', { maximumFractionDigits: 5 }) : ''
 
   async function save() {
-    const reserveN = Number(v)
     if (!parsedRate) return setErr('Inserisci un tasso valido, usando virgola o punto per i decimali.')
     if (compareMoney(parsedRate.value, '0.00001') < 0) return setErr('Il tasso minimo dopo il troncamento è 0,00001.')
     if (exceedsTosiLimit(r, 100000000n)) return setErr('Il tasso massimo è 100.000.000.')
-    if (!Number.isInteger(reserveN) || reserveN < 0) return setErr('La riserva deve essere un numero intero, zero o più.')
     setBusy(true)
     setErr('')
-    const { data, error } = await supabase.rpc('update_bcp', { p_rate: parsedRate.value, p_reserve: reserveN })
+    const { data, error } = await supabase.rpc('update_bcp', { p_rate: parsedRate.value })
     setBusy(false)
     if (error) return setErr(error.message)
-    onDone(rescale ? 'Dati BCP aggiornati: saldi, prezzi e ordini in attesa ricalcolati al nuovo tasso.' : 'Dati BCP aggiornati.',
-      data as ReserveCheck)
+    onDone(rescale ? 'Tasso aggiornato: saldi, prezzi e ordini in attesa ricalcolati.' : 'Tasso invariato.', data as ReserveCheck)
   }
 
   return (
     <Dialog onClose={onClose} scrollable>
-      <Txt variant="title">Dati BCP</Txt>
+      <Txt variant="title">Tasso BCP</Txt>
       <Txt variant="muted">Tosi per 1 diamante</Txt>
       <TextInput value={r} onChangeText={setR} keyboardType="decimal-pad" style={input} />
       {parsedRate?.truncated && <Txt variant="muted">Verrà salvato come {fmt(parsedRate.value)} Tosi.</Txt>}
-      <Txt variant="muted">Riserva totale (diamanti)</Txt>
-      <TextInput value={v} onChangeText={setV} keyboardType="number-pad" style={input} />
+      <Txt variant="muted">La riserva cambia solo con i depositi e i prelievi registrati nella Banca.</Txt>
       {rescale && (
         <View style={[s.warning, { borderColor: t.gold }]}>
           <Txt variant="title">Attenzione</Txt>

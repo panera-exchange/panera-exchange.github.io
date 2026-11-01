@@ -30,7 +30,6 @@ export default function Home() {
   const [delBusy, setDelBusy] = useState(false)
   const [delErr, setDelErr] = useState('')
   const [check, setCheck] = useState<ReserveCheck | null>(null)
-  const [checking, setChecking] = useState(false)
 
   const load = useCallback(async () => {
     const [settings, exch, arts] = await Promise.all([
@@ -59,14 +58,6 @@ export default function Home() {
     setDeleting(null)
     toast('Articolo eliminato.')
     load()
-  }
-
-  async function checkReserve() {
-    setChecking(true)
-    const { data, error } = await supabase.rpc('reserve_check')
-    setChecking(false)
-    if (error) return toast(error.message)
-    setCheck(data as ReserveCheck)
   }
 
   const cards = stats && [
@@ -113,10 +104,7 @@ export default function Home() {
         {!!error && <Txt variant="error">{error}</Txt>}
         {cards && <Grid data={cards} keyOf={(c) => c.key} render={(c) => c.node} />}
         {isAdmin && stats && (
-          <View style={s.row}>
-            <Btn title="Modifica dati BCP" variant="alt" onPress={() => setEditingBcp(true)} />
-            <Btn title={checking ? 'Verifica...' : 'Verifica riserva'} variant="alt" onPress={checkReserve} disabled={checking} />
-          </View>
+          <View style={s.row}><Btn title="Modifica tasso BCP" variant="alt" onPress={() => setEditingBcp(true)} /></View>
         )}
 
         <View style={[s.row, { justifyContent: 'space-between', marginTop: 8 }]}>
@@ -147,7 +135,7 @@ export default function Home() {
       {editingArticle && <ArticleDialog key={editingArticle.id} article={editingArticle} onClose={() => setEditingArticle(null)}
         onDone={(m) => { setEditingArticle(null); toast(m); load() }} />}
       {editingBcp && stats && (
-        <BcpDialog rate={stats.rate} reserve={stats.reserve} onClose={() => setEditingBcp(false)}
+        <BcpDialog rate={stats.rate} onClose={() => setEditingBcp(false)}
           onDone={(m, result) => { setEditingBcp(false); toast(m); setCheck(result); load() }} />
       )}
       {check && <ReserveCheckDialog check={check} onClose={() => setCheck(null)} />}
