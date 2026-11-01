@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Platform, StyleSheet, TextInput, View, type TextStyle } from 'react-native'
 import { supabase } from '@/lib/supabase'
 import { fonts, useTheme } from '@/theme'
-import { Btn, Txt } from '@/components/ui'
+import { Amount, Btn, Txt } from '@/components/ui'
 import { Dialog } from '@/components/dialogs'
 import { compareMoney, exceedsTosiLimit, fmt, money, parseTosi } from '@/lib/format'
 
@@ -51,9 +51,51 @@ export function ArticleDialog({ article, onClose, onDone }: {
   )
 }
 
+// Esito di reserve_check(): importi in Tosi come testo, differenza > 0 se ci sono Tosi non coperti da diamanti.
+export type ReserveCheck = {
+  rate: string; reserve: string; balances: string; held: string; circulating: string; expected: string
+  difference: string; difference_diamonds: string; tolerance: string; ok: boolean
+}
+
+// Verifica della riserva (solo admin): Tosi in circolazione contro tasso × diamanti in riserva.
+export function ReserveCheckDialog({ check, onClose }: { check: ReserveCheck; onClose: () => void }) {
+  const t = useTheme()
+  const sign = compareMoney(check.difference, '0')
+  const verdict = check.ok
+    ? sign === 0 ? 'I conti tornano.' : 'I conti tornano, a meno degli arrotondamenti.'
+    : sign > 0 ? 'Ci sono Tosi non coperti da diamanti.' : 'Ci sono diamanti in riserva non rappresentati da Tosi.'
+  const rows = [
+    { label: 'Saldi di tutti i conti', value: check.balances },
+    { label: 'Tosi trattenuti negli ordini', value: check.held },
+    { label: 'Tosi in circolazione', value: check.circulating },
+    { label: `Attesi (${fmt(check.rate)} × ${fmt(check.reserve)} diamanti)`, value: check.expected },
+  ]
+  return (
+    <Dialog onClose={onClose} scrollable>
+      <Txt variant="title">Verifica della riserva</Txt>
+      {rows.map((r) => (
+        <View key={r.label}>
+          <Txt variant="muted">{r.label}</Txt>
+          <Amount>{fmt(r.value)}</Amount>
+        </View>
+      ))}
+      <View style={[s.warning, { borderColor: check.ok ? t.green : t.red }]}>
+        <Txt variant="title">{verdict}</Txt>
+        {sign !== 0 && (
+          <Amount after={`≈ ${fmt(check.difference_diamonds)} diamanti`}>Differenza: {sign > 0 ? '+' : ''}{fmt(check.difference)}</Amount>
+        )}
+      </View>
+      <View style={[s.row, { justifyContent: 'flex-end' }]}>
+        <Btn title="Chiudi" variant="alt" onPress={onClose} />
+      </View>
+    </Dialog>
+  )
+}
+
 // Modifica dei dati della Banca Centrale Panera (solo admin).
+// update_bcp restituisce l'esito della verifica della riserva, che si mostra subito dopo.
 export function BcpDialog({ rate, reserve, onClose, onDone }: {
-  rate: string; reserve: number; onClose: () => void; onDone: (message: string) => void
+  rate: string; reserve: number; onClose: () => void; onDone: (message: string, check: ReserveCheck) => void
 }) {
   const t = useTheme()
   const [r, setR] = useState(money(rate))
@@ -75,10 +117,11 @@ export function BcpDialog({ rate, reserve, onClose, onDone }: {
     if (!Number.isInteger(reserveN) || reserveN < 0) return setErr('La riserva deve essere un numero intero, zero o più.')
     setBusy(true)
     setErr('')
-    const { error } = await supabase.rpc('update_bcp', { p_rate: parsedRate.value, p_reserve: reserveN })
+    const { data, error } = await supabase.rpc('update_bcp', { p_rate: parsedRate.value, p_reserve: reserveN })
     setBusy(false)
     if (error) return setErr(error.message)
-    onDone(rescale ? 'Dati BCP aggiornati: saldi e prezzi ricalcolati al nuovo tasso.' : 'Dati BCP aggiornati.')
+    onDone(rescale ? 'Dati BCP aggiornati: saldi, prezzi e ordini in attesa ricalcolati al nuovo tasso.' : 'Dati BCP aggiornati.',
+      data as ReserveCheck)
   }
 
   return (
@@ -93,10 +136,11 @@ export function BcpDialog({ rate, reserve, onClose, onDone }: {
         <View style={[s.warning, { borderColor: t.gold }]}>
           <Txt variant="title">Attenzione</Txt>
           <Txt>
-            Da {fmt(rate)} a {fmt(parsedRate.value)} Tosi per diamante: saldi di tutti gli utenti e prezzi di tutti gli
-            annunci (anche esauriti) verranno moltiplicati per {ratio}, così mantengono lo stesso valore in diamanti.
+            Da {fmt(rate)} a {fmt(parsedRate.value)} Tosi per diamante: saldi di tutti gli utenti, prezzi di tutti gli
+            annunci (anche esauriti) e importi degli ordini in attesa verranno moltiplicati per {ratio}, così mantengono
+            lo stesso valore in diamanti.
           </Txt>
-          <Txt variant="muted">Gli ordini in attesa non cambiano: si chiudono alla cifra concordata. Non si può annullare.</Txt>
+          <Txt variant="muted">Non si può annullare. Subito dopo vedrai la verifica della riserva.</Txt>
         </View>
       )}
       {!!err && <Txt variant="error">{err}</Txt>}

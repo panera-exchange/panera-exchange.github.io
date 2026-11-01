@@ -48,3 +48,7 @@ database/
 tests/
 icons/
 *Zone.Identifier
+
+# documenti di lavoro e SQL del database (locali)
+/docs/
+/supabase/

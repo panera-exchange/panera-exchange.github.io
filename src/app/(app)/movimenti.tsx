@@ -15,7 +15,12 @@ type Trade = {
 }
 // Voce del proprio conto non legata a uno scambio (es. Tosi assegnati dall'admin): la vede solo il titolare.
 type Entry = { id: number; amount: string; kind: string; memo: string | null; created_at: string }
-type Row = { at: number } & ({ type: 'trade'; trade: Trade } | { type: 'entry'; entry: Entry })
+// Ordine in attesa ricalcolato a un cambio del tasso: solo informativo, il saldo non cambia.
+type Rescale = {
+  id: number; old_lot_price: string; new_lot_price: string; created_at: string
+  orders: { quantity: number; lot_size: number; item_id: string; buyer_id: string; items: { name: string } | null } | null
+}
+type Row = { at: number } & ({ type: 'trade'; trade: Trade } | { type: 'entry'; entry: Entry } | { type: 'rescale'; rescale: Rescale })
 
 const PAGE = 50
 const MINE = { bg: 'rgba(242, 183, 5, 0.12)', bar: '#f2b705' }
@@ -36,6 +41,7 @@ export default function Movimenti() {
   const [mine, setMine] = useState(false)
   const [trades, setTrades] = useState<Trade[]>([])
   const [entries, setEntries] = useState<Entry[]>([])
+  const [rescales, setRescales] = useState<Rescale[]>([])
   const [hasMore, setHasMore] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false)
   const [blocked, setBlocked] = useState('0')
@@ -47,20 +53,24 @@ export default function Movimenti() {
 
   const load = useCallback(async () => {
     refreshBalance()
-    const [tr, ledger, pending] = await Promise.all([
+    const [tr, ledger, pending, resc] = await Promise.all([
       fetchTrades(),
       supabase.from('ledger').select('id, amount::text, kind, memo, created_at').is('order_id', null)
         .order('created_at', { ascending: false }).limit(100),
       // Tosi bloccati: ordini in attesa in cui sono il compratore.
       supabase.from('orders').select('quantity, lot_price::text').eq('status', 'pending').eq('buyer_id', me ?? ''),
+      // La RLS restituisce solo i ricalcoli degli ordini in cui sono compratore o venditore.
+      supabase.from('order_rescales').select('id, old_lot_price::text, new_lot_price::text, created_at, orders(quantity, lot_size, item_id, buyer_id, items(name))')
+        .order('created_at', { ascending: false }).limit(100),
     ])
-    const failure = tr.error ?? ledger.error ?? pending.error
+    const failure = tr.error ?? ledger.error ?? pending.error ?? resc.error
     if (failure) return setError(failure.message)
     setError('')
     const page = (tr.data ?? []) as Trade[]
     setTrades(page)
     setHasMore(page.length === PAGE)
     setEntries((ledger.data ?? []) as Entry[])
+    setRescales((resc.data ?? []) as unknown as Rescale[])
     setBlocked(sumMoney((pending.data ?? []).map((o) => money(o.lot_price, o.quantity))))
   }, [fetchTrades, refreshBalance, me])
 
@@ -83,9 +93,10 @@ export default function Movimenti() {
     const list: Row[] = [
       ...trades.map((trade) => ({ type: 'trade' as const, at: Date.parse(trade.closed_at), trade })),
       ...entries.map((entry) => ({ type: 'entry' as const, at: Date.parse(entry.created_at), entry })).filter((r) => r.at >= oldest),
+      ...rescales.map((rescale) => ({ type: 'rescale' as const, at: Date.parse(rescale.created_at), rescale })).filter((r) => r.at >= oldest),
     ]
     return list.sort((a, b) => b.at - a.at)
-  }, [trades, entries, hasMore])
+  }, [trades, entries, rescales, hasMore])
 
   const stats = [
     { key: 'saldo', label: 'Saldo disponibile', value: balance === null ? '...' : fmt(balance), price: true },
@@ -124,6 +135,23 @@ export default function Movimenti() {
     )
   }
 
+  // Né + né −: i Tosi trattenuti non sono nel saldo, la riga dice solo come è cambiato l'importo dell'ordine.
+  function rescaleRow(r: Rescale) {
+    const o = r.orders
+    const quantity = o?.quantity ?? 0
+    return (
+      <View style={[s.line, { backgroundColor: ACCOUNT.bg, borderLeftColor: ACCOUNT.bar }]}>
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <Txt>{o?.buyer_id === me ? 'Tosi trattenuti ricalcolati' : 'Importo di vendita ricalcolato'}</Txt>
+          <Txt variant="muted">
+            {o ? `${fmt(quantity * o.lot_size)} ${o.items?.name ?? o.item_id} · ` : ''}cambio del tasso BCP · {fmtDate(r.created_at)}
+          </Txt>
+        </View>
+        <Amount variant="muted">{fmt(money(r.old_lot_price, quantity))} → {fmt(money(r.new_lot_price, quantity))}</Amount>
+      </View>
+    )
+  }
+
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={pageContent}>
@@ -145,8 +173,8 @@ export default function Movimenti() {
         <Card style={{ gap: 6 }}>
           {rows.length === 0 && <Txt variant="muted">Nessun movimento.</Txt>}
           {rows.map((r) => (
-            <View key={r.type === 'trade' ? r.trade.id : `entry-${r.entry.id}`}>
-              {r.type === 'trade' ? tradeRow(r.trade) : entryRow(r.entry)}
+            <View key={r.type === 'trade' ? r.trade.id : r.type === 'entry' ? `entry-${r.entry.id}` : `rescale-${r.rescale.id}`}>
+              {r.type === 'trade' ? tradeRow(r.trade) : r.type === 'entry' ? entryRow(r.entry) : rescaleRow(r.rescale)}
             </View>
           ))}
         </Card>

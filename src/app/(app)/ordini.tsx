@@ -39,21 +39,27 @@ export default function Ordini() {
   const wide = width >= 700
   const me = session?.user.id
   const [orders, setOrders] = useState<Order[]>([])
+  // Prezzo del lotto concordato all'inizio, per gli ordini ricalcolati a un cambio del tasso BCP.
+  const [agreed, setAgreed] = useState<Map<string, string>>(new Map())
   const [error, setError] = useState('')
   const [action, setAction] = useState<Pending | null>(null)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
 
   const load = useCallback(async () => {
-    const { data, error } = await supabase
-      .from('orders')
-      .select('id, quantity, lot_size, lot_price::text, status, created_at, delivered_at, buyer_id, seller_id, item_id, items(name, stack_size), buyer:profiles!buyer_id(username), seller:profiles!seller_id(username)')
-      .order('created_at', { ascending: false })
-    if (error) setError(error.message)
-    else {
-      setError('')
-      setOrders((data ?? []) as unknown as Order[])
-    }
+    const [list, rescales] = await Promise.all([
+      supabase
+        .from('orders')
+        .select('id, quantity, lot_size, lot_price::text, status, created_at, delivered_at, buyer_id, seller_id, item_id, items(name, stack_size), buyer:profiles!buyer_id(username), seller:profiles!seller_id(username)')
+        .order('created_at', { ascending: false }),
+      supabase.from('order_rescales').select('order_id, old_lot_price::text').order('created_at', { ascending: false }),
+    ])
+    const failure = list.error ?? rescales.error
+    if (failure) return setError(failure.message)
+    setError('')
+    setOrders((list.data ?? []) as unknown as Order[])
+    // Dal più recente al più vecchio: per ogni ordine resta il prezzo prima del primo ricalcolo.
+    setAgreed(new Map((rescales.data ?? []).map((r) => [r.order_id as string, r.old_lot_price as string])))
   }, [])
 
   useFocusEffect(useCallback(() => { load() }, [load]))
@@ -111,6 +117,11 @@ export default function Ordini() {
           </View>
           <View style={{ marginTop: 8 }}>
             <Amount variant="price">{fmt(money(o.lot_price, o.quantity))}</Amount>
+            {agreed.has(o.id) && (
+              <Amount variant="muted" after="al cambio del tasso BCP">
+                Ricalcolato da {fmt(money(agreed.get(o.id)!, o.quantity))}
+              </Amount>
+            )}
           </View>
           {pending && (
             <Txt style={{ marginTop: 4 }}>

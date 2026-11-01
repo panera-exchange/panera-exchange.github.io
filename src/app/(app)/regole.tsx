@@ -102,7 +102,7 @@ const CONSIGLI = [
   },
   {
     title: 'Cambio del tasso BCP',
-    body: "Quando la BCP modifica il tasso diamante–Tosi, saldi e prezzi degli annunci vengono ricalcolati automaticamente, così da mantenere lo stesso valore in diamanti.",
+    body: "Quando la BCP modifica il tasso diamante–Tosi, saldi, prezzi degli annunci e importi degli ordini in attesa vengono ricalcolati automaticamente, così da mantenere lo stesso valore in diamanti.",
   },
 ]
 

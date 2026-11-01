@@ -1,7 +1,3 @@
-<p align="center">
-  <img src="docs/home.png" alt="PanEx home screen" width="720">
-</p>
-
 ```
 ██████╗  █████╗ ███╗   ██╗███████╗██╗  ██╗
 ██╔══██╗██╔══██╗████╗  ██║██╔════╝╚██╗██╔╝
