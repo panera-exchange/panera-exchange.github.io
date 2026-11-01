@@ -10,7 +10,7 @@ import { TopNav, pageContent } from '@/components/shell'
 import { ConfirmDialog, Dialog, ListingDialog } from '@/components/dialogs'
 import { useLightning } from '@/components/lightning'
 import { compareMoney, lots, money, perUnit, stacks, subtractMoney } from '@/lib/format'
-import { CATEGORIES, categoryLabel, type Category } from '@/lib/categories'
+import { CATEGORY_FILTER, categoryLabel, type Category } from '@/lib/categories'
 import { reachedOfferMilestone } from '@/lib/offer-milestone'
 
 type Kind = 'offer' | 'request'
@@ -27,8 +27,6 @@ const SORTS: { value: Sort; label: string }[] = [
   { value: 'asc', label: 'Prezzo crescente' },
   { value: 'desc', label: 'Prezzo decrescente' },
 ]
-
-const CATEGORY_FILTER: { value: Category | 'all'; label: string }[] = [{ value: 'all', label: 'Tutte le categorie' }, ...CATEGORIES]
 
 function availability(r: Row, isReq: boolean): string {
   if (r.lot_size === 1) return `${fmt(r.quantity)} ${isReq ? 'richiesti' : 'disponibili'}`
