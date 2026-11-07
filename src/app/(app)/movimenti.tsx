@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { useSession } from '@/lib/session'
 import { useTheme } from '@/theme'
 import { fmtDate, money, sumMoney } from '@/lib/format'
-import { Amount, Badge, Btn, Card, Checkbox, Grid, ItemIcon, Txt, fmt } from '@/components/ui'
+import { Amount, Badge, Btn, Card, Checkbox, Grid, ItemIcon, Select, Txt, fmt } from '@/components/ui'
 import { TopNav, pageContent } from '@/components/shell'
 
 // Scambio concluso, pubblico: lo vedono tutti gli utenti.
@@ -46,10 +46,13 @@ function describe(e: Entry): [string, string] {
 }
 
 export default function Movimenti() {
-  const { session, balance, refreshBalance } = useSession()
+  const { session, balance, refreshBalance, isAdmin } = useSession()
   const t = useTheme()
   const me = session?.user.id
   const [mine, setMine] = useState(false)
+  // Solo per gli admin: gli scambi di un singolo utente ('all' = tutto il mercato). Esclude "Solo i miei" e viceversa.
+  const [subject, setSubject] = useState('all')
+  const [users, setUsers] = useState<{ id: string; username: string }[]>([])
   const [trades, setTrades] = useState<Trade[]>([])
   const [entries, setEntries] = useState<Entry[]>([])
   const [rescales, setRescales] = useState<Rescale[]>([])
@@ -60,7 +63,13 @@ export default function Movimenti() {
 
   const fetchTrades = useCallback((after?: Trade) => supabase.rpc('market_trades', {
     p_mine: mine, p_before_at: after?.closed_at ?? null, p_before_id: after?.id ?? null, p_limit: PAGE,
-  }), [mine])
+    p_profile_id: subject === 'all' ? null : subject,
+  }), [mine, subject])
+
+  useFocusEffect(useCallback(() => {
+    if (!isAdmin) return
+    supabase.from('profiles').select('id, username').order('username').then(({ data }) => setUsers(data ?? []))
+  }, [isAdmin]))
 
   const load = useCallback(async () => {
     refreshBalance()
@@ -99,17 +108,25 @@ export default function Movimenti() {
     setHasMore(page.length === PAGE)
   }
 
+  // Di chi sono gli scambi evidenziati: l'utente scelto dall'admin, altrimenti io.
+  const perspective = subject === 'all' ? me : subject
+  const subjectName = users.find((u) => u.id === subject)?.username ?? ''
+  // Guardando un altro utente le voci blu (che sono del mio conto) non c'entrano.
+  const otherUser = subject !== 'all' && subject !== me
+
   // Scambi e voci del conto insieme, dal più recente. Finché ci sono altri scambi da caricare,
   // le voci del conto più vecchie dell'ultimo scambio aspettano, per non finire fuori ordine.
   const rows = useMemo(() => {
     const oldest = hasMore && trades.length ? Date.parse(trades[trades.length - 1].closed_at) : -Infinity
     const list: Row[] = [
       ...trades.map((trade) => ({ type: 'trade' as const, at: Date.parse(trade.closed_at), trade })),
-      ...entries.map((entry) => ({ type: 'entry' as const, at: Date.parse(entry.created_at), entry })).filter((r) => r.at >= oldest),
-      ...rescales.map((rescale) => ({ type: 'rescale' as const, at: Date.parse(rescale.created_at), rescale })).filter((r) => r.at >= oldest),
+      ...(otherUser ? [] : [
+        ...entries.map((entry) => ({ type: 'entry' as const, at: Date.parse(entry.created_at), entry })).filter((r) => r.at >= oldest),
+        ...rescales.map((rescale) => ({ type: 'rescale' as const, at: Date.parse(rescale.created_at), rescale })).filter((r) => r.at >= oldest),
+      ]),
     ]
     return list.sort((a, b) => b.at - a.at)
-  }, [trades, entries, rescales, hasMore])
+  }, [trades, entries, rescales, hasMore, otherUser])
 
   const stats = [
     { key: 'saldo', label: 'Saldo disponibile', value: balance === null ? '...' : fmt(balance), price: true },
@@ -118,16 +135,19 @@ export default function Movimenti() {
 
   function tradeRow(x: Trade) {
     const total = money(x.lot_price, x.quantity)
-    const sold = x.seller_id === me
-    const bought = x.buyer_id === me
+    const sold = x.seller_id === perspective
+    const bought = x.buyer_id === perspective
     const color = sold ? t.pos : bought ? t.red : t.muted
+    const badge = perspective === me
+      ? sold ? 'Tua vendita' : 'Tuo acquisto'
+      : sold ? `Vendita di ${subjectName}` : `Acquisto di ${subjectName}`
     return (
       <View style={[s.line, (sold || bought) && { backgroundColor: MINE.bg, borderLeftColor: MINE.bar }]}>
         <ItemIcon id={x.item_id} size={36} />
         <View style={{ flex: 1, minWidth: 0 }}>
           <Txt>{fmt(x.quantity * x.lot_size)} {x.item_name}</Txt>
           <Txt variant="muted">{x.seller ?? '?'} → {x.buyer ?? '?'} · {fmtDate(x.closed_at)}</Txt>
-          {(sold || bought) && <View style={{ marginTop: 4 }}><Badge text={sold ? 'Tua vendita' : 'Tuo acquisto'} tone={sold ? 'green' : 'gold'} /></View>}
+          {(sold || bought) && <View style={{ marginTop: 4 }}><Badge text={badge} tone={sold ? 'green' : 'gold'} /></View>}
         </View>
         <Amount style={{ color }}>{sold ? '+' : bought ? '-' : ''}{fmt(total)}</Amount>
       </View>
@@ -178,10 +198,15 @@ export default function Movimenti() {
         {!!error && <Txt variant="error">{error}</Txt>}
         <View style={s.header}>
           <Txt variant="title">Movimenti</Txt>
-          <Checkbox label="Solo i miei" value={mine} onChange={setMine} />
+          <Checkbox label="Solo i miei" value={mine} onChange={(v) => { setMine(v); if (v) setSubject('all') }} />
+          {isAdmin && (
+            <Select value={subject} onChange={(v) => { setSubject(v); if (v !== 'all') setMine(false) }} width={240}
+              options={[{ value: 'all', label: 'Tutti gli utenti' }, ...users.map((u) => ({ value: u.id, label: u.username }))]} />
+          )}
         </View>
         <Txt variant="muted">
-          {mine ? 'I tuoi scambi conclusi' : 'Gli scambi conclusi di tutto il mercato'}, con le voci del tuo conto in blu.
+          {otherUser ? `Gli scambi conclusi di ${subjectName}, come compratore o venditore.`
+            : `${mine || subject === me ? 'I tuoi scambi conclusi' : 'Gli scambi conclusi di tutto il mercato'}, con le voci del tuo conto in blu.`}
         </Txt>
         <Card style={{ gap: 6 }}>
           {rows.length === 0 && <Txt variant="muted">Nessun movimento.</Txt>}

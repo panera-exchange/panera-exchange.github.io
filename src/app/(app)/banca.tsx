@@ -20,6 +20,22 @@ type PendingOrder = {
 }
 type Operation = 'deposit' | 'withdraw' | 'add' | 'remove'
 type Closing = { order: PendingOrder; type: 'cancel' | 'confirm' }
+// Operazione dello storico (admin_operations). admin è null per quelle fatte prima che si registrasse chi opera.
+// Per gli ordini chiusi da un admin username è chi compra, counterpart chi vende, amount il totale dell'ordine.
+type HistoryRow = {
+  key: string; kind: 'deposit' | 'withdraw' | 'adjust' | 'order_cancel' | 'order_confirm'; happened_at: string
+  username: string; counterpart: string | null; admin: string | null; amount: string; memo: string | null
+  item_name: string | null; pieces: number | null
+}
+
+const HISTORY_PAGE = 50
+const HISTORY_KIND = {
+  deposit: { label: 'Deposito', bar: '#3f8a22' },
+  withdraw: { label: 'Prelievo', bar: '#b83a2e' },
+  adjust: { label: 'Rettifica', bar: '#f2b705' },
+  order_cancel: { label: 'Ordine annullato', bar: '#3a6cc0' },
+  order_confirm: { label: 'Ordine concluso', bar: '#3a6cc0' },
+} as const
 
 const OPERATIONS: { value: Operation; label: string }[] = [
   { value: 'deposit', label: 'Deposito di diamanti' },
@@ -50,23 +66,47 @@ export default function Banca() {
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
   const [closing, setClosing] = useState<Closing | null>(null)
+  const [history, setHistory] = useState<HistoryRow[]>([])
+  const [historyUser, setHistoryUser] = useState('all')
+  const [hasMore, setHasMore] = useState(false)
+  const [loadingMore, setLoadingMore] = useState(false)
+
+  // Una pagina dello storico, dal più recente; "after" è l'ultima riga già caricata.
+  const fetchHistory = useCallback((after?: HistoryRow) => supabase.rpc('admin_operations', {
+    p_profile_id: historyUser === 'all' ? null : historyUser,
+    p_before_at: after?.happened_at ?? null, p_before_key: after?.key ?? null, p_limit: HISTORY_PAGE,
+  }), [historyUser])
 
   const load = useCallback(async () => {
     if (!isAdmin) return
-    const [chk, acc, ord] = await Promise.all([
+    const [chk, acc, ord, hist] = await Promise.all([
       supabase.rpc('reserve_check'),
       supabase.rpc('admin_accounts'),
       supabase.rpc('admin_orders'),
+      fetchHistory(),
     ])
-    const failure = chk.error ?? acc.error ?? ord.error
+    const failure = chk.error ?? acc.error ?? ord.error ?? hist.error
     if (failure) return setError(failure.message)
     setError('')
     const list = (acc.data ?? []) as Account[]
+    const page = (hist.data ?? []) as HistoryRow[]
     setCheck(chk.data as ReserveCheck)
     setAccounts(list)
     setOrders((ord.data ?? []) as PendingOrder[])
+    setHistory(page)
+    setHasMore(page.length === HISTORY_PAGE)
     setUser((u) => u || list[0]?.id || '')
-  }, [isAdmin])
+  }, [isAdmin, fetchHistory])
+
+  async function loadMore() {
+    setLoadingMore(true)
+    const { data, error } = await fetchHistory(history.at(-1))
+    setLoadingMore(false)
+    if (error) return setError(error.message)
+    const page = (data ?? []) as HistoryRow[]
+    setHistory((old) => [...old, ...page])
+    setHasMore(page.length === HISTORY_PAGE)
+  }
 
   useFocusEffect(useCallback(() => { load() }, [load]))
 
@@ -159,6 +199,28 @@ export default function Banca() {
     )
   }
 
+  function historyRow(h: HistoryRow) {
+    const kind = HISTORY_KIND[h.kind]
+    const order = h.kind === 'order_cancel' || h.kind === 'order_confirm'
+    const negative = h.amount.startsWith('-')
+    const title = order
+      ? `${kind.label} · ${fmt(h.pieces ?? 0)} ${h.item_name ?? ''}, ${h.counterpart} vende a ${h.username}`
+      : `${kind.label} · ${h.username}`
+    return (
+      <View style={[s.line, { borderLeftColor: kind.bar }]}>
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <Txt>{title}</Txt>
+          {!!h.memo && <Txt variant="muted">{h.memo}</Txt>}
+          <Txt variant="muted">{h.admin ? `da ${h.admin}` : 'admin non registrato'} · {fmtDate(h.happened_at)}</Txt>
+        </View>
+        {/* Gli ordini mostrano il totale senza segno: i Tosi passano da un conto all'altro, non entrano né escono. */}
+        <Amount style={{ color: order ? t.muted : negative ? t.red : t.pos }}>
+          {order || negative ? '' : '+'}{fmt(h.amount)}
+        </Amount>
+      </View>
+    )
+  }
+
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
       <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={pageContent}>
@@ -220,6 +282,20 @@ export default function Banca() {
         {orders.length === 0
           ? <Txt>Nessun ordine in attesa.</Txt>
           : <View style={{ gap: 16 }}>{orders.map((o) => <View key={o.id}>{orderCard(o)}</View>)}</View>}
+
+        <Txt variant="title" style={{ marginTop: 8 }}>Storico operazioni</Txt>
+        <Txt variant="muted">{"Depositi, prelievi, rettifiche e ordini chiusi da un admin, dal più recente, con l'admin che li ha fatti."}</Txt>
+        <Select value={historyUser} onChange={setHistoryUser} width={Math.min(300, width - 28)}
+          options={[{ value: 'all', label: 'Tutti gli utenti' }, ...accounts.map((a) => ({ value: a.id, label: a.username }))]} />
+        <Card style={{ gap: 6 }}>
+          {history.length === 0 && <Txt variant="muted">Nessuna operazione.</Txt>}
+          {history.map((h) => <View key={h.key}>{historyRow(h)}</View>)}
+        </Card>
+        {hasMore && (
+          <View style={{ alignItems: 'center' }}>
+            <Btn title={loadingMore ? 'Caricamento...' : 'Carica altre'} variant="alt" onPress={loadMore} disabled={loadingMore} />
+          </View>
+        )}
       </ScrollView>
 
       {confirming && (
@@ -285,4 +361,6 @@ const s = StyleSheet.create({
   actionsWide: { width: 140, flexDirection: 'column' },
   action: { flex: 1 },
   actionWide: { width: '100%' },
+  // Barra colorata a sinistra per il tipo di operazione, come le righe di Movimenti.
+  line: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8, paddingHorizontal: 8, borderLeftWidth: 4 },
 })
