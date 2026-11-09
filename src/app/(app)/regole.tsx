@@ -26,7 +26,7 @@ const ARTICLES = [
   },
   {
     title: 'Depositi e prelievi di diamanti',
-    body: 'I diamanti non possono essere scambiati direttamente sul mercato. Ogni deposito o prelievo deve avvenire esclusivamente tramite la procedura ufficiale della BCP presso la propria sede in Brasimogne Est, previo avviso alla Presidenza della BCP e con relativa registrazione nel libro mastro e rilascio del libretto sigillato come prova della transazione.',
+    body: 'I diamanti non possono essere scambiati direttamente sul mercato. Ogni deposito o prelievo deve avvenire esclusivamente tramite la procedura ufficiale della BCP presso la propria sede in Brasimogne Est, previo avviso alla Presidenza della BCP e con relativa registrazione nel libro mastro e rilascio del libretto sigillato come prova della transazione. Gli admin registrano ogni deposito e prelievo anche su PanEx, che accredita o addebita i Tosi corrispondenti al tasso in vigore.',
   },
   {
     title: 'Prezzi onesti',
@@ -85,12 +85,16 @@ const CONSIGLI = [
     body: "Prima della consegna l'ordine può essere annullato sia da chi compra sia da chi vende, e i Tosi tornano al compratore. Una volta segnata la consegna, può annullare soltanto chi vende.",
   },
   {
+    title: 'Ordini bloccati',
+    body: "Se l'altra parte non consegna o non preme “Ricevuto”, conviene contattare un admin: dopo aver verificato in gioco può annullare l'ordine, restituendo i Tosi a chi compra, oppure concluderlo, pagando chi vende. La motivazione compare nella scheda Ordini di entrambi.",
+  },
+  {
     title: 'Tosi bloccati',
     body: "Al momento dell'acquisto i Tosi restano bloccati finché l'ordine non si chiude. La scheda Movimenti riporta sia il saldo disponibile sia l'importo bloccato negli acquisti aperti.",
   },
   {
     title: 'Controllare i prezzi prima di vendere',
-    body: "La scheda Andamento riporta, per ogni item già scambiato, l'ultimo prezzo e la media pesata, insieme al prezzo di vendita più basso e alla richiesta più alta del momento. Il “?” accanto a ogni voce ne spiega il significato.",
+    body: "La scheda Andamento riporta, per ogni item già scambiato, l'ultimo prezzo e la media pesata, insieme al prezzo di vendita più basso e alla richiesta più alta del momento. Si può filtrare per categoria e ordinare per “Più scambiati”. Il “?” accanto a ogni voce ne spiega il significato.",
   },
   {
     title: 'Le occasioni',
@@ -98,11 +102,11 @@ const CONSIGLI = [
   },
   {
     title: 'Lo storico del mercato',
-    body: "Movimenti elenca tutti gli scambi conclusi sul mercato, e l'opzione “Solo i miei” li limita ai propri. Le righe blu sono voci del proprio conto, come i Tosi assegnati dagli admin o i ricalcoli dovuti a un cambio del tasso.",
+    body: "Movimenti elenca tutti gli scambi conclusi sul mercato, e l'opzione “Solo i miei” li limita ai propri. Le righe blu sono voci del proprio conto: depositi e prelievi di diamanti, rettifiche degli admin, rimborsi di ordini annullati e ricalcoli dovuti a un cambio del tasso.",
   },
   {
     title: 'Cambio del tasso BCP',
-    body: "Quando la BCP modifica il tasso diamante–Tosi, saldi e prezzi degli annunci vengono ricalcolati automaticamente, così da mantenere lo stesso valore in diamanti.",
+    body: "Quando la BCP modifica il tasso diamante–Tosi, saldi, prezzi degli annunci e importi degli ordini in attesa vengono ricalcolati automaticamente, così da mantenere lo stesso valore in diamanti. Anche i prezzi in Andamento sono convertiti al tasso attuale, quindi un cambio di tasso non altera le variazioni di prezzo.",
   },
 ]
 

@@ -10,7 +10,7 @@ import { fmtDate, money } from '@/lib/format'
 import { Amount, Btn, Card, Grid, Txt, fmt } from '@/components/ui'
 import { TopNav, pageContent } from '@/components/shell'
 import { ConfirmDialog } from '@/components/dialogs'
-import { ArticleDialog, BcpDialog } from '@/components/home-dialogs'
+import { ArticleDialog, BcpDialog, ReserveCheckDialog, type ReserveCheck } from '@/components/home-dialogs'
 
 type Article = { id: string; title: string; body: string; created_at: string; updated_at: string | null; profiles: { username: string } | null }
 type Stats = { rate: string; reserve: number; exchanges: number; volume: string }
@@ -29,6 +29,7 @@ export default function Home() {
   const [deleting, setDeleting] = useState<Article | null>(null)
   const [delBusy, setDelBusy] = useState(false)
   const [delErr, setDelErr] = useState('')
+  const [check, setCheck] = useState<ReserveCheck | null>(null)
 
   const load = useCallback(async () => {
     const [settings, exch, arts] = await Promise.all([
@@ -103,7 +104,7 @@ export default function Home() {
         {!!error && <Txt variant="error">{error}</Txt>}
         {cards && <Grid data={cards} keyOf={(c) => c.key} render={(c) => c.node} />}
         {isAdmin && stats && (
-          <View style={s.row}><Btn title="Modifica dati BCP" variant="alt" onPress={() => setEditingBcp(true)} /></View>
+          <View style={s.row}><Btn title="Modifica tasso BCP" variant="alt" onPress={() => setEditingBcp(true)} /></View>
         )}
 
         <View style={[s.row, { justifyContent: 'space-between', marginTop: 8 }]}>
@@ -134,9 +135,10 @@ export default function Home() {
       {editingArticle && <ArticleDialog key={editingArticle.id} article={editingArticle} onClose={() => setEditingArticle(null)}
         onDone={(m) => { setEditingArticle(null); toast(m); load() }} />}
       {editingBcp && stats && (
-        <BcpDialog rate={stats.rate} reserve={stats.reserve} onClose={() => setEditingBcp(false)}
-          onDone={(m) => { setEditingBcp(false); toast(m); load() }} />
+        <BcpDialog rate={stats.rate} onClose={() => setEditingBcp(false)}
+          onDone={(m, result) => { setEditingBcp(false); toast(m); setCheck(result); load() }} />
       )}
+      {check && <ReserveCheckDialog check={check} onClose={() => setCheck(null)} />}
       {deleting && (
         <ConfirmDialog title="Eliminare l'articolo?" danger confirmLabel="Elimina" busy={delBusy} error={delErr}
           text={`"${deleting.title}" sparirà per tutti gli utenti.`} onConfirm={removeArticle} onClose={() => setDeleting(null)} />

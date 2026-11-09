@@ -75,10 +75,10 @@ export function fmtBalance(value: string | number): string {
 
 export const lots = (n: number): string => `${fmt(n)} ${n === 1 ? 'lotto' : 'lotti'}`
 
-// Come si contano i pezzi in gioco: "2 stack", "1 shulker" (27 stack). Vuoto se non è un numero tondo.
+// Come si contano i pezzi in gioco: "2 stack", "1 chest" (27 stack). Vuoto se non è un numero tondo.
 export function stacks(pieces: number, stackSize: number): string {
-  const shulker = stackSize * 27
-  if (pieces >= shulker && pieces % shulker === 0) return `${fmt(pieces / shulker)} shulker`
+  const chest = stackSize * 27
+  if (pieces >= chest && pieces % chest === 0) return `${fmt(pieces / chest)} chest`
   if (stackSize > 1 && pieces % stackSize === 0) return `${fmt(pieces / stackSize)} stack`
   return ''
 }

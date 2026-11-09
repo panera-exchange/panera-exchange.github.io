@@ -15,3 +15,6 @@ export const CATEGORIES = [
 export type Category = (typeof CATEGORIES)[number]['value']
 
 export const categoryLabel = (value: Category): string => CATEGORIES.find((c) => c.value === value)?.label ?? value
+
+// Scelte del filtro per categoria, con "tutte" in cima (Offerte, Richieste, Andamento).
+export const CATEGORY_FILTER: { value: Category | 'all'; label: string }[] = [{ value: 'all', label: 'Tutte le categorie' }, ...CATEGORIES]

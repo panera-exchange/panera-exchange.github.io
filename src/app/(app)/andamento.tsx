@@ -1,6 +1,7 @@
 import { Dialog } from '@/components/dialogs'
 import { TopNav, pageContent } from '@/components/shell'
 import { Amount, Badge, Btn, Card, ItemIcon, Select, Txt, fmt } from '@/components/ui'
+import { CATEGORY_FILTER, categoryLabel, type Category } from '@/lib/categories'
 import { compareMoney } from '@/lib/format'
 import { supabase } from '@/lib/supabase'
 import { useTheme } from '@/theme'
@@ -15,7 +16,7 @@ const HELP = {
   },
   avg_price: {
     label: 'Media pesata',
-    text: 'Prezzo medio per unità di tutti gli scambi conclusi.',
+    text: 'Prezzo medio per unità di tutti gli scambi conclusi, convertito al tasso BCP attuale.',
   },
   min_ask: {
     label: 'Vendita da',
@@ -32,10 +33,11 @@ const HELP = {
 } as const
 
 type HelpKey = keyof typeof HELP
-type Sort = 'recent' | 'priceAsc' | 'priceDesc' | 'alphabetical'
+type Sort = 'recent' | 'traded' | 'priceAsc' | 'priceDesc' | 'alphabetical'
 
 const SORTS: { value: Sort; label: string }[] = [
   { value: 'recent', label: 'Scambi più recenti' },
+  { value: 'traded', label: 'Più scambiati' },
   { value: 'priceAsc', label: 'Prezzo crescente' },
   { value: 'priceDesc', label: 'Prezzo decrescente' },
   { value: 'alphabetical', label: 'Ordine alfabetico' },
@@ -43,14 +45,18 @@ const SORTS: { value: Sort; label: string }[] = [
 
 const COMPACT_SORTS: { value: Sort; label: string }[] = [
   { value: 'recent', label: 'Recenti' },
+  { value: 'traded', label: 'Scambiati' },
   { value: 'priceAsc', label: 'Prezzo ↑' },
   { value: 'priceDesc', label: 'Prezzo ↓' },
   { value: 'alphabetical', label: 'Nome A–Z' },
 ]
 
+// Prezzi per unità già convertiti al tasso BCP attuale dalla vista market_stats; trades conta gli scambi conclusi.
 type MarketStat = {
   item_id: string
   name: string
+  category: Category
+  trades: number
   last_price: string
   last_trade_at: string
   prev_price: string | null
@@ -126,7 +132,10 @@ function StatCard({ row, wide, now, onHelp }: {
     <Card style={s.card}>
       <View style={s.heading}>
         <ItemIcon id={row.item_id} size={44} />
-        <Txt variant="title" style={s.name} numberOfLines={2}>{row.name}</Txt>
+        <View style={s.name}>
+          <Txt variant="title" numberOfLines={2}>{row.name}</Txt>
+          <Badge text={categoryLabel(row.category)} tone="gray" />
+        </View>
         <PriceChange current={row.last_price} previous={row.prev_price} onHelp={onHelp} />
       </View>
       <View style={[s.details, wide ? s.detailsWide : s.detailsNarrow]}>
@@ -134,6 +143,7 @@ function StatCard({ row, wide, now, onHelp }: {
           <Amount variant="price" style={s.price}>{fmt(row.last_price)}</Amount>
           <Txt variant="muted" style={s.unit}>per unità</Txt>
           <Txt variant="muted" style={s.time}>Ultimo scambio · {timeAgo(row.last_trade_at, now)}</Txt>
+          <Txt variant="muted" style={s.time}>{fmt(row.trades)} {row.trades === 1 ? 'scambio concluso' : 'scambi conclusi'}</Txt>
         </View>
         <View style={[s.metrics, wide ? s.metricsWide : s.metricsNarrow, { borderColor: t.line }]}>
           <Metric kind="avg_price" value={fmt(row.avg_price)} onHelp={onHelp} />
@@ -159,19 +169,22 @@ export default function Andamento() {
   const [now, setNow] = useState(0)
   const [help, setHelp] = useState<HelpKey | null>(null)
   const [sort, setSort] = useState<Sort>('recent')
+  const [category, setCategory] = useState<Category | 'all'>('all')
 
   const sortedRows = useMemo(() => {
-    if (sort === 'recent') return rows
+    const filtered = category === 'all' ? rows : rows.filter((r) => r.category === category)
+    if (sort === 'recent') return filtered
     const byName = (a: MarketStat, b: MarketStat) =>
       a.name.localeCompare(b.name, 'it-IT', { sensitivity: 'base' }) || a.item_id.localeCompare(b.item_id)
-    return [...rows].sort((a, b) =>
+    return [...filtered].sort((a, b) =>
       sort === 'alphabetical' ? byName(a, b)
+      : sort === 'traded' ? b.trades - a.trades || byName(a, b)
       : (sort === 'priceAsc' ? compareMoney(a.last_price, b.last_price) : compareMoney(b.last_price, a.last_price)) || byName(a, b))
-  }, [rows, sort])
+  }, [rows, sort, category])
 
   const load = useCallback(async () => {
     const { data, error: queryError } = await supabase.from('market_stats')
-      .select('item_id,name,last_price::text,last_trade_at,prev_price::text,avg_price::text,min_ask::text,max_bid::text,spread::text')
+      .select('item_id,name,category,trades,last_price::text,last_trade_at,prev_price::text,avg_price::text,min_ask::text,max_bid::text,spread::text')
       .order('last_trade_at', { ascending: false })
     setLoading(false)
     setRefreshing(false)
@@ -201,7 +214,7 @@ export default function Andamento() {
             <View style={s.headerRow}>
               <View style={s.headerText}>
                 <Txt variant="title">Andamento</Txt>
-                <Txt variant="muted">Prezzi e scambi conclusi su PanEx</Txt>
+                <Txt variant="muted">Prezzi e scambi conclusi su PanEx, convertiti al tasso BCP attuale</Txt>
               </View>
               <View style={s.sortColumn}>
                 <Txt variant="muted" style={s.sortLabel}>Ordina per</Txt>
@@ -209,12 +222,13 @@ export default function Andamento() {
                   onChange={setSort} width={sortWidth} />
               </View>
             </View>
+            <Select value={category} options={CATEGORY_FILTER} onChange={setCategory} width={Math.min(300, width - 28)} />
             {!!error && <Txt variant="error">{error}</Txt>}
           </View>
         </View>}
         ListEmptyComponent={loading
           ? <ActivityIndicator color={t.green} />
-          : !error ? <Txt variant="muted">Nessun item ha ancora uno scambio concluso.</Txt> : null}
+          : !error ? <Txt variant="muted">{category === 'all' ? 'Nessun item ha ancora uno scambio concluso.' : 'Nessun item di questa categoria ha ancora uno scambio concluso.'}</Txt> : null}
       />
       {help && <Dialog onClose={() => setHelp(null)} scrollable>
         <Txt variant="title">{HELP[help].label}</Txt>
@@ -236,7 +250,7 @@ const s = StyleSheet.create({
   card: { gap: 16 },
   heading: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   priceChange: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  name: { flex: 1, minWidth: 0 },
+  name: { flex: 1, minWidth: 0, gap: 4 },
   details: { gap: 16 },
   detailsWide: { flexDirection: 'row', alignItems: 'center' },
   detailsNarrow: { alignItems: 'stretch' },

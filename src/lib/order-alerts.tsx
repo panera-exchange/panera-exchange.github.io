@@ -60,10 +60,17 @@ export function OrderAlertsProvider({ children }: { children: ReactNode }) {
     check(false)
     const timer = setInterval(() => check(false), 60_000)
     const channel = supabase.channel(`orders-${uid}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => check(true))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
+        // Un admin ha chiuso un mio ordine: i conteggi possono solo scendere, quindi l'avviso va dato qui.
+        const row = payload.new as { status?: string; closed_by_admin?: string | null } | undefined
+        if (payload.eventType === 'UPDATE' && row?.closed_by_admin) {
+          toast(row.status === 'cancelled' ? 'Un admin ha annullato un tuo ordine: dettagli in Ordini.' : 'Un admin ha concluso un tuo ordine: dettagli in Ordini.')
+        }
+        check(true)
+      })
       .subscribe()
     return () => { cancelled = true; clearInterval(timer); supabase.removeChannel(channel) }
-  }, [uid, apply])
+  }, [uid, apply, toast])
 
   const value = {
     todo: counts ? counts.toDeliver + counts.toReceive : 0,
